@@ -37,6 +37,8 @@ DEFAULT_YTDL_OPTS: Final[_OptsType] = (
     settings.MAX_DOWNLOAD_THREADS,
     '--ignore-errors',
     '--verbose',
+    '--js-runtimes',
+    'node',
     *get_cookies_opts_if_not_empty(),
 )
 
