@@ -39,6 +39,8 @@ DEFAULT_YTDL_OPTS: Final[_OptsType] = (
     '--verbose',
     '--js-runtimes',
     'node',
+    '--extractor-args',
+    f'youtubepot-bgutilhttp:base_url={settings.POT_PROVIDER_BASE_URL}',
     *get_cookies_opts_if_not_empty(),
 )
 

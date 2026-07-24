@@ -55,9 +55,15 @@ services:
     depends_on:
       - yt_postgres
       - yt_rabbitmq
+      - yt_pot_provider
     volumes:
       - "/data/downloads:/filestorage"
       - "shared-tmpfs:/tmp/download_tmpfs"
+  yt_pot_provider:
+    container_name: yt_pot_provider
+    image: brainicism/bgutil-ytdlp-pot-provider
+    init: true
+    restart: unless-stopped
   yt_postgres:
     container_name: yt_postgres
     image: "postgres:15"

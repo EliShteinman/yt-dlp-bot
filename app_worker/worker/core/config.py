@@ -10,6 +10,7 @@ class WorkerSettings(CommonSettings):
     INSTAGRAM_ENCODE_TO_H264: bool
     FACEBOOK_ENCODE_TO_H264: bool
     MAX_DOWNLOAD_THREADS: str
+    POT_PROVIDER_BASE_URL: str
 
     @field_validator('MAX_DOWNLOAD_THREADS')
     @classmethod
