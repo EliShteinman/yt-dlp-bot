@@ -30,4 +30,4 @@ class TwitterHost(AbstractHostConfig, metaclass=HostConfRegistry):
         )
 
     def _build_custom_ytdl_video_opts(self) -> tuple[str, ...]:
-        return '--format-sort', 'res,proto:https,vcodec:h265,h264'
+        return '--format-sort', 'res,proto:https,vcodec:h265'
