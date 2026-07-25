@@ -53,17 +53,26 @@ services:
     command: >
       bash -c "python start.py && alembic upgrade head && python main.py"
     depends_on:
-      - yt_postgres
-      - yt_rabbitmq
-      - yt_pot_provider
+      yt_postgres:
+        condition: service_started
+      yt_rabbitmq:
+        condition: service_started
+      yt_pot_provider:
+        condition: service_healthy
     volumes:
       - "/data/downloads:/filestorage"
       - "shared-tmpfs:/tmp/download_tmpfs"
   yt_pot_provider:
     container_name: yt_pot_provider
-    image: brainicism/bgutil-ytdlp-pot-provider
+    image: brainicism/bgutil-ytdlp-pot-provider:1.3.1
     init: true
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:4416/ping',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
   yt_postgres:
     container_name: yt_postgres
     image: "postgres:15"

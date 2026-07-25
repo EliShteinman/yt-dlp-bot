@@ -1,3 +1,31 @@
+## Release 1.7.3
+
+Release date: July 24, 2026
+
+## New Features
+
+- Provide YouTube PO Tokens via the `bgutil-ytdlp-pot-provider` HTTP sidecar to
+  avoid throttling and missing formats.
+
+## Important
+
+- YouTube extraction now requires a JavaScript runtime. The worker image ships
+  Node.js 22 (Alpine 3.22) and enables it via `--js-runtimes node`. Deno was
+  dropped: its Alpine package is too old and it does not run on musl.
+- A new `yt_pot_provider` service was added to `docker-compose.yml`. Rebuild the
+  base image and worker, then `docker compose up -d`.
+- A new `POT_PROVIDER_BASE_URL` variable was added to `envs/worker.env`
+  (defaults to `http://yt_pot_provider:4416`).
+- If you previously copied `app_worker/ytdl_opts/default.py` to `user.py`,
+  re-copy or merge these changes, otherwise the JS-runtime, PO-token and
+  format-sort fixes will not apply to your downloads.
+
+## Misc
+
+- Removed the deprecated `h264` field from `--format-sort`.
+
+---
+
 ## Release 1.7
 
 Release date: May 30, 2024
