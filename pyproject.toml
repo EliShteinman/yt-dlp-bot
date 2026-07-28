@@ -12,6 +12,16 @@ required-version = ">=0.9"
 [tool.ruff.lint.flake8-quotes]
 inline-quotes = "single"
 
+[tool.ruff.lint.per-file-ignores]
+"**/tests/**/*.py" = [
+    "ANN001",   # pytest fixtures (mocker, tmp_path) are awkward to annotate
+    "PLR2004",  # magic values are the point of a test assertion
+    "S101",     # asserts are how tests assert
+    "S105",     # test fixtures may embed fake secrets
+    "S106",
+    "SLF001",   # tests legitimately exercise private methods
+]
+
 [tool.ruff.lint]
 select = ["ALL"]
 ignore = [
@@ -85,4 +95,10 @@ dependencies = [
 [dependency-groups]
 lint = [
     "ruff>=0.9.4",
+]
+test = [
+    "pytest>=8.3.4",
+    "pytest-asyncio>=0.25.0",
+    "pytest-cov>=6.0.0",
+    "pytest-mock>=3.14.0",
 ]
