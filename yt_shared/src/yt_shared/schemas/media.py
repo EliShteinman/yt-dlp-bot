@@ -9,6 +9,7 @@ from pydantic import ConfigDict, DirectoryPath, Field, FilePath, model_validator
 
 from yt_shared.enums import DownMediaType, MediaFileType, TaskSource, TelegramChatType
 from yt_shared.schemas.base import StrictRealBaseModel
+from yt_shared.schemas.validators import PublicHttpUrl, SafeFilename
 from yt_shared.utils.common import calculate_aspect_ratio, format_bytes
 from yt_shared.utils.file import file_size
 
@@ -24,12 +25,12 @@ class InbMediaPayload(StrictRealBaseModel):
     from_user_id: int | None
     message_id: int | None
     ack_message_id: int | None
-    url: str
+    url: PublicHttpUrl
     original_url: str
     source: TaskSource
     save_to_storage: bool
     download_media_type: DownMediaType
-    custom_filename: str | None
+    custom_filename: SafeFilename | None
     automatic_extension: bool
     added_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
