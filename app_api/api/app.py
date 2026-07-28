@@ -15,7 +15,9 @@ from api.config import settings
 def create_app() -> FastAPI:
     setup_logging()
     app_ = FastAPI(
-        title='YT DLP BOT API', description='API for your downloaded videos', debug=True
+        title='YT DLP BOT API',
+        description='API for your downloaded videos',
+        debug=settings.DEBUG,
     )
     app_.include_router(healthcheck_router)
     app_.include_router(v1_router)

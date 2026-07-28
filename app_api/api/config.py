@@ -6,6 +6,7 @@ class ApiSettings(CommonSettings):
     API_HOST: str
     API_PORT: PositiveInt
     API_WORKERS: PositiveInt
+    DEBUG: bool = False
 
 
 settings = ApiSettings()
