@@ -16,7 +16,9 @@ services:
       - envs/api.env
     restart: unless-stopped
     ports:
-      - "1984:8000"
+      # Bound to localhost only: the API has no authentication and is not used
+      # externally (bot-only setup). Reachable from the host, never the network.
+      - "127.0.0.1:1984:8000"
     command: bash -c "python start.py && python main.py"
     depends_on:
       - yt_postgres
