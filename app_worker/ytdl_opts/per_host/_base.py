@@ -41,8 +41,8 @@ class BaseHostConfModel(BaseModel):
     encode_audio: bool
     encode_video: bool
 
-    ffmpeg_audio_opts: str | None
-    ffmpeg_video_opts: str | None
+    ffmpeg_audio_opts: tuple[str, ...] | None
+    ffmpeg_video_opts: tuple[str, ...] | None
 
     ytdl_opts: dict
 
@@ -71,8 +71,8 @@ class AbstractHostConfig:
     DEFAULT_VIDEO_YTDL_OPTS: tuple[str, ...] = VIDEO_YTDL_OPTS
     DEFAULT_VIDEO_FORMAT_SORT_OPT: tuple[str, ...] = DEFAULT_VIDEO_FORMAT_SORT_OPT
 
-    FFMPEG_AUDIO_OPTS: str | None = None
-    FFMPEG_VIDEO_OPTS: str | None = None
+    FFMPEG_AUDIO_OPTS: tuple[str, ...] | None = None
+    FFMPEG_VIDEO_OPTS: tuple[str, ...] | None = None
 
     def __init__(self, url: str) -> None:
         self._log = logging.getLogger(self.__class__.__name__)

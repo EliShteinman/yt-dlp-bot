@@ -135,7 +135,7 @@ class MediaService:
             coro_tasks.append(
                 create_task(
                     EncodeToH264Task(
-                        media=media, cmd_tpl=host_conf.FFMPEG_VIDEO_OPTS
+                        media=media, encode_opts=host_conf.FFMPEG_VIDEO_OPTS
                     ).run(),
                     task_name=EncodeToH264Task.__class__.__name__,
                     logger=self._log,

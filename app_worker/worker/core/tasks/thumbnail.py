@@ -7,8 +7,6 @@ from worker.core.tasks.abstract import AbstractFfBinaryTask
 
 
 class MakeThumbnailTask(AbstractFfBinaryTask):
-    _CMD = 'ffmpeg -y -loglevel error -ss {time_point} -i "{filepath}" -vframes 1 -q:v 7 "{thumbpath}"'
-
     def __init__(
         self, thumbnail_path: Path, *args, duration: float, video_ctx: Video, **kwargs
     ) -> None:
@@ -24,11 +22,18 @@ class MakeThumbnailTask(AbstractFfBinaryTask):
         return is_created
 
     async def _make_thumbnail(self) -> bool:
-        cmd = self._CMD.format(
-            filepath=self._file_path,
-            time_point=self._get_thumb_time_point(),
-            thumbpath=self._thumbnail_path,
-        )
+        cmd = [
+            *self._FFMPEG_BASE,
+            '-ss',
+            str(self._get_thumb_time_point()),
+            '-i',
+            str(self._file_path),
+            '-vframes',
+            '1',
+            '-q:v',
+            '7',
+            str(self._thumbnail_path),
+        ]
         self._log.info('Creating thumbnail with command "%s"', cmd)
         proc = await self._run_proc(cmd)
         if not proc:

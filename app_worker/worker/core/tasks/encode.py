@@ -10,12 +10,15 @@ class EncodeToH264Task(AbstractFfBinaryTask):
     _CMD_TIMEOUT = 300
 
     def __init__(
-        self, media: DownMedia, cmd_tpl: str, check_if_in_final_format: bool = True
+        self,
+        media: DownMedia,
+        encode_opts: tuple[str, ...],
+        check_if_in_final_format: bool = True,
     ) -> None:
         super().__init__(file_path=media.video.current_filepath)
         self._media = media
         self._video = media.video
-        self._CMD = cmd_tpl  # lol
+        self._encode_opts = encode_opts
 
         self._check_if_in_final_format = check_if_in_final_format
 
@@ -46,14 +49,20 @@ class EncodeToH264Task(AbstractFfBinaryTask):
 
     async def _encode_video(self) -> None:
         output = self._get_output_path()
-        cmd = self._CMD.format(filepath=self._file_path, output=output)
+        cmd = [
+            *self._FFMPEG_BASE,
+            '-i',
+            str(self._file_path),
+            *self._encode_opts,
+            str(output),
+        ]
         self._log.info('Encoding: %s', cmd)
 
         proc = await self._run_proc(cmd)
         if not proc:
             return
 
-        stdout, stderr = await self._get_stdout_stderr(proc)
+        _stdout, stderr = await self._get_stdout_stderr(proc)
         self._log.info(
             'Process %s returncode: %d, stderr: %s', cmd, proc.returncode, stderr
         )
