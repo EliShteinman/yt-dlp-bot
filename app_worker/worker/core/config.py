@@ -1,4 +1,4 @@
-from pydantic import DirectoryPath, field_validator
+from pydantic import DirectoryPath, Field, field_validator
 from yt_shared.config import CommonSettings
 
 
@@ -11,6 +11,7 @@ class WorkerSettings(CommonSettings):
     FACEBOOK_ENCODE_TO_H264: bool
     MAX_DOWNLOAD_THREADS: str
     POT_PROVIDER_BASE_URL: str
+    MAX_PLAYLIST_ITEMS: int = Field(gt=0)
 
     @field_validator('MAX_DOWNLOAD_THREADS')
     @classmethod

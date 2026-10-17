@@ -14,3 +14,4 @@ dependencies = [
 pythonpath = ["."]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+markers = ["network: hits real external services such as YouTube"]
