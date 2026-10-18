@@ -1,8 +1,8 @@
-import asyncio
 import html
 from typing import Any, ClassVar
 
 from pyrogram.enums import ParseMode
+from pyrogram.errors import RPCError
 from yt_shared.enums import RabbitPayloadType
 from yt_shared.schemas.error import ErrorDownloadGeneralPayload, ErrorDownloadPayload
 
@@ -32,18 +32,41 @@ class ErrorDownloadHandler(AbstractDownloadHandler):
     }
 
     async def handle(self) -> None:
-        self._send_error_text()
+        self._log.warning(
+            '%s for task "%s" (%s): %s',
+            self._ERR_MSG_HEADER_MAP[self._body.type],
+            self._body.task_id,
+            self._body.url,
+            self._body.exception_type,
+        )
+        await self._delete_acknowledgment_message()
+        await self._send_error_text()
 
-    def _send_error_text(self) -> None:
-        for user in self._get_receiving_users():
-            kwargs: dict[str, Any] = {
-                'chat_id': user.id,
-                'text': self._format_error_message(),
-                'parse_mode': ParseMode.HTML,
-            }
-            if self._body.message_id:
-                kwargs['reply_to_message_id'] = self._body.message_id
-            asyncio.create_task(self._bot.send_message(**kwargs))  # noqa:RUF006
+    async def _send_error_text(self) -> None:
+        text = self._format_error_message()
+        for user in self._receiving_users:
+            await self._send_error_to_chat(chat_id=user.id, text=text)
+
+    async def _send_error_to_chat(self, chat_id: int, text: str) -> None:
+        kwargs: dict[str, Any] = {
+            'chat_id': chat_id,
+            'text': text,
+            'parse_mode': ParseMode.HTML,
+        }
+        if self._body.message_id:
+            kwargs['reply_to_message_id'] = self._body.message_id
+        try:
+            await self._bot.send_message(**kwargs)
+        except RPCError:
+            self._log.exception(
+                'Failed to deliver error of task "%s" to chat "%s"',
+                self._body.task_id,
+                chat_id,
+            )
+            return
+        self._log.info(
+            'Delivered error of task "%s" to chat "%s"', self._body.task_id, chat_id
+        )
 
     def _format_error_message(self) -> str:
         exception_msg = html.escape(self._body.exception_msg)
