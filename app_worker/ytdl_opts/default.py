@@ -19,7 +19,11 @@ DEFAULT_YTDL_OPTS: Final[_OptsType] = (
 from typing import Final
 
 from worker.core.config import settings
-from worker.utils import build_resolution_sort_key, get_cookies_opts_if_not_empty
+from worker.utils import (
+    build_resolution_sort_key,
+    build_video_format,
+    get_cookies_opts_if_not_empty,
+)
 
 FINAL_AUDIO_FORMAT: Final[str] = 'mp3'
 FINAL_THUMBNAIL_FORMAT: Final[str] = 'jpg'
@@ -70,7 +74,7 @@ AUDIO_FORMAT_YTDL_OPTS: Final[_OptsType] = ('--format', 'bestaudio/best')
 
 VIDEO_YTDL_OPTS: Final[_OptsType] = (
     '--format',
-    'bestvideo[ext=mp4]+bestaudio[ext=m4a]/mp4',
+    build_video_format(settings.MAX_VIDEO_FILESIZE),
     '--write-thumbnail',
     '--convert-thumbnails',
     FINAL_THUMBNAIL_FORMAT,

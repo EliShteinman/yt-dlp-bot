@@ -41,3 +41,9 @@ def get_cookies_opts_if_not_empty() -> tuple[str, str] | tuple:
 def build_resolution_sort_key(max_height: int | None) -> str:
     """Return the yt-dlp format-sort resolution key, optionally capped."""
     return f'res:{max_height}' if max_height else 'res'
+
+
+def build_video_format(max_filesize: str | None) -> str:
+    """Return the yt-dlp video format selector, optionally size-limited."""
+    size_filter = f'[filesize_approx<={max_filesize}]' if max_filesize else ''
+    return f'bestvideo[ext=mp4]{size_filter}+bestaudio[ext=m4a]/mp4{size_filter}'
