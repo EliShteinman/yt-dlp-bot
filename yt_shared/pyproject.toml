@@ -15,7 +15,7 @@ dependencies = [
     "pydantic>=2.10.6",
     "pydantic-settings>=2.7.1",
     "rich>=14.0.0",
-    "sqlalchemy>=2.0.37",
+    "sqlalchemy[asyncio]>=2.0.37",
     "sqlalchemy-utils>=0.41.2",
     "uvloop>=0.21.0 ; sys_platform == 'linux'",
 ]
