@@ -10,7 +10,7 @@ RUN --mount=from=ghcr.io/astral-sh/uv,source=/uv,target=/bin/uv \
     --mount=type=bind,source=./app_worker/pyproject.toml,target=pyproject.toml \
     uv sync --frozen --no-install-project --inexact \
     && uv pip install --upgrade --pre "yt-dlp[default]" \
-    && uv pip install bgutil-ytdlp-pot-provider==1.3.1
+    && uv pip install bgutil-ytdlp-pot-provider==2.0.2
 
 COPY ./app_worker ./start.py ./
 COPY ./yt_shared ./yt_shared
