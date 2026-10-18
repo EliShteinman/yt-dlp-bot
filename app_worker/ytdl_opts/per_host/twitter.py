@@ -4,6 +4,7 @@ from yt_shared.constants import TWITTER_HOSTS
 from yt_shared.enums import DownMediaType
 
 from worker.core.config import settings
+from worker.utils import build_resolution_sort_key
 from ytdl_opts.per_host._base import AbstractHostConfig, BaseHostConfModel
 from ytdl_opts.per_host._registry import HostConfRegistry
 
@@ -33,5 +34,5 @@ class TwitterHost(AbstractHostConfig, metaclass=HostConfRegistry):
     def _build_custom_ytdl_video_opts(self) -> tuple[str, ...]:
         return (
             '--format-sort',
-            f'res:{settings.MAX_VIDEO_HEIGHT},proto:https,vcodec:h265',
+            f'{build_resolution_sort_key(settings.MAX_VIDEO_HEIGHT)},proto:https,vcodec:h265',
         )
