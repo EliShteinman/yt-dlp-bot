@@ -81,7 +81,7 @@ services:
     env_file:
       - envs/common.env
     ports:
-      - "5435:5432"
+      - "127.0.0.1:5435:5432"
     restart: unless-stopped
     volumes:
       - pgdata:/var/lib/postgresql/data
@@ -89,8 +89,8 @@ services:
     image: "rabbitmq:3.12-management-alpine"
     container_name: yt_rabbitmq
     ports:
-      - "25672:5672"
-      - "15672:15672"
+      - "127.0.0.1:25672:5672"
+      - "127.0.0.1:15672:15672"
     restart: unless-stopped
   yt_redis:
     image: "redis:alpine"
