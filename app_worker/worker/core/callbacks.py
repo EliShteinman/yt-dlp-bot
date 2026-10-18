@@ -1,17 +1,24 @@
+import asyncio
 import logging
 
 from aio_pika import IncomingMessage
 from yt_shared.schemas.media import InbMediaPayload
 
+from worker.core.config import settings
 from worker.core.payload_handler import InboundPayloadHandler
 
 
 class RMQCallbacks:
     """RabbitMQ's callbacks."""
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        payload_handler: InboundPayloadHandler | None = None,
+        max_simultaneous_downloads: int = settings.MAX_SIMULTANEOUS_DOWNLOADS,
+    ) -> None:
         self._log = logging.getLogger(self.__class__.__name__)
-        self._payload_handler = InboundPayloadHandler()
+        self._payload_handler = payload_handler or InboundPayloadHandler()
+        self._download_slots = asyncio.Semaphore(max_simultaneous_downloads)
 
     async def on_input_message(self, message: IncomingMessage) -> None:
         try:
@@ -30,8 +37,9 @@ class RMQCallbacks:
             await self._reject_invalid_message(message)
             return
 
-        await message.ack()
-        await self._payload_handler.handle(media_payload=media_payload)
+        async with self._download_slots:
+            await message.ack()
+            await self._payload_handler.handle(media_payload=media_payload)
         self._log.info('Processing done with payload: %s', media_payload)
 
     async def _reject_invalid_message(self, message: IncomingMessage) -> None:
