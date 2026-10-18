@@ -26,6 +26,10 @@ class MediaDownloader:
     _PLAYLIST_TYPE = 'playlist'
     _DESTINATION_TMP_DIR_NAME_LEN = 4
     _KEEP_VIDEO_OPTION = '--keep-video'
+    _MISSING_MEDIA_MSG = (
+        'Download failed: "{name}" was not created. The download was interrupted '
+        'or rejected by the site, see the worker log for the yt-dlp error.'
+    )
 
     _EXT_TO_NAME: ClassVar[dict[str, str]] = {
         FINAL_AUDIO_FORMAT: 'audio',
@@ -81,7 +85,7 @@ class MediaDownloader:
 
                 meta_sanitized = ytdl.sanitize_info(meta)
 
-            self._log.info('Finished downloading %s', url)
+            self._log.info('yt-dlp finished processing %s', url)
             self._log.debug('Downloaded "%s" meta: %s', url, meta_sanitized)
             self._log.info(
                 'Content of "%s": %s', curr_tmp_dir, list_files_human(curr_tmp_dir)
@@ -155,6 +159,7 @@ class MediaDownloader:
     ) -> Video:
         video_filename = self._get_video_filename(meta)
         video_filepath = curr_tmp_dir / video_filename
+        self._ensure_media_file_exists(video_filepath)
 
         if custom_video_filename:
             dest_path = destination_dir / custom_video_filename
@@ -197,6 +202,8 @@ class MediaDownloader:
         audio_filename = self._find_downloaded_file(
             root_path=curr_tmp_dir, extension=FINAL_AUDIO_FORMAT
         )
+        if not audio_filename:
+            raise MediaDownloaderError(self._MISSING_MEDIA_MSG.format(name='audio'))
         audio_filepath = curr_tmp_dir / audio_filename
         self._log.info('Moving "%s" to "%s"', audio_filepath, destination_dir)
         shutil.move(audio_filepath, destination_dir)
@@ -207,6 +214,12 @@ class MediaDownloader:
             directory_path=destination_dir,
             file_size=file_size(destination_dir / audio_filename),
         )
+
+    def _ensure_media_file_exists(self, filepath: Path) -> None:
+        if filepath.is_file():
+            return
+        self._log.error('Expected media file "%s" was not created', filepath)
+        raise MediaDownloaderError(self._MISSING_MEDIA_MSG.format(name=filepath.name))
 
     def _find_downloaded_file(self, root_path: Path, extension: str) -> str | None:
         """Try to find downloaded audio or thumbnail file."""

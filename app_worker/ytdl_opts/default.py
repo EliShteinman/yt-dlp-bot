@@ -44,6 +44,13 @@ DEFAULT_YTDL_OPTS: Final[_OptsType] = (
     *get_cookies_opts_if_not_empty(),
 )
 
+PLAYLIST_EXPAND_YTDL_OPTS: Final[_OptsType] = (
+    '--flat-playlist',
+    '--no-playlist',
+    '--quiet',
+    *get_cookies_opts_if_not_empty(),
+)
+
 DEFAULT_VIDEO_FORMAT_SORT_OPT: Final[_OptsType] = (
     '--format-sort',
     'res,vcodec:h265',

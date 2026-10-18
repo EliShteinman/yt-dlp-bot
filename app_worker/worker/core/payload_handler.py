@@ -13,13 +13,18 @@ from yt_shared.schemas.success import SuccessDownloadPayload
 from worker.core.downloader import MediaDownloader
 from worker.core.exceptions import DownloadVideoServiceError, GeneralVideoServiceError
 from worker.core.media_service import MediaService
+from worker.core.playlist_expander import PlaylistExpander
+from worker.core.playlist_fan_out import PlaylistFanOut
 
 
 class InboundPayloadHandler:
-    def __init__(self) -> None:
+    def __init__(self, playlist_fan_out: PlaylistFanOut | None = None) -> None:
         """Initialize the InboundPayloadHandler with a logger and RMQ publisher."""
         self._log = logging.getLogger(self.__class__.__name__)
         self._rmq_publisher = RmqPublisher()
+        self._playlist_fan_out = playlist_fan_out or PlaylistFanOut(
+            expander=PlaylistExpander(), publisher=self._rmq_publisher
+        )
 
     async def handle(self, media_payload: InbMediaPayload) -> None:
         """Handle the inbound media payload.
@@ -40,6 +45,10 @@ class InboundPayloadHandler:
             media_payload (InbMediaPayload): The inbound media payload to process.
 
         """
+        if await self._playlist_fan_out.try_fan_out(media_payload):
+            self._log.info('Playlist "%s" split into entry tasks', media_payload.url)
+            return
+
         async for session in get_db():
             media_service = MediaService(
                 media_payload=media_payload,

@@ -3,7 +3,8 @@ import traceback
 from typing import Any, ClassVar
 
 from pyrogram.enums import ParseMode
-from pyrogram.errors import MessageIdInvalid, MessageNotModified
+from pyrogram.errors import RPCError
+from pyrogram.types import Message
 from yt_shared.emoji import SUCCESS_EMOJI
 from yt_shared.enums import MediaFileType, TaskSource
 from yt_shared.rabbit.publisher import RmqPublisher
@@ -38,37 +39,38 @@ class SuccessDownloadHandler(AbstractDownloadHandler):
             self._cleanup()
 
     async def _handle(self) -> None:
-        coro_tasks = []
-        for media_object in self._body.media.get_media_objects():
-            coro_tasks.append(self._handle_media_object(media_object))
+        await self._delete_acknowledgment_message()
+        coro_tasks = [
+            self._handle_media_object(media_object)
+            for media_object in self._body.media.get_media_objects()
+        ]
+        await asyncio.gather(*coro_tasks)
+
+    async def _upload_with_status(self, media_object: BaseMedia) -> None:
+        status_message = await self._send_upload_status(media_object)
         try:
-            await asyncio.gather(*coro_tasks)
+            await self._create_upload_task(media_object)
         finally:
-            await self._delete_acknowledgment_message()
+            await self._delete_upload_status(status_message)
 
-    async def _delete_acknowledgment_message(self) -> None:
-        if self._body.from_chat_id and self._body.context.ack_message_id:
-            await self._bot.delete_messages(
-                chat_id=self._body.from_chat_id,
-                message_ids=self._body.context.ack_message_id,
-            )
+    async def _send_upload_status(self, media_object: BaseMedia) -> Message | None:
+        if not self._body.from_chat_id:
+            return None
+        return await self._bot.send_message(
+            chat_id=self._body.from_chat_id,
+            text=f'⬆️ {bold(f"Uploading {media_object.file_size_human()}")}',
+            reply_to_message_id=self._body.message_id,
+        )
 
-    async def _set_upload_message(self, media_object: BaseMedia) -> None:
-        if not (self._body.from_chat_id and self._body.context.ack_message_id):
+    async def _delete_upload_status(self, status_message: Message | None) -> None:
+        if not status_message:
             return
-
         try:
-            await self._bot.edit_message_text(
-                chat_id=self._body.from_chat_id,
-                message_id=self._body.context.ack_message_id,
-                text=f'⬆️ {bold(f"Uploading {media_object.file_size_human()}")}',
-            )
-        except (MessageIdInvalid, MessageNotModified) as err:
-            # Expected behaviour when several links where pasted in one message and
-            # the acknowledgment message was deleted after the first successful upload
+            await status_message.delete()
+        except RPCError as err:
             self._log.warning(
-                'Could not edit the message id "%s": %s',
-                self._body.context.ack_message_id,
+                'Could not delete upload status message "%s": %s',
+                status_message.id,
                 err,
             )
 
@@ -93,11 +95,7 @@ class SuccessDownloadHandler(AbstractDownloadHandler):
             await self._send_success_text(media_object)
             if self._upload_is_enabled():
                 self._validate_file_size_for_upload(media_object)
-                coros = (
-                    self._create_upload_task(media_object),
-                    self._set_upload_message(media_object),
-                )
-                await asyncio.gather(*coros)
+                await self._upload_with_status(media_object)
             else:
                 self._log.warning(
                     'File "%s" will not be uploaded due to upload configuration',

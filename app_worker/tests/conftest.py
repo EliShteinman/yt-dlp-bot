@@ -33,6 +33,7 @@ _ENV_DEFAULTS: dict[str, str] = {
     'TMP_DOWNLOADED_DIR': str(_TMP_ROOT / 'downloaded'),
     'MAX_SIMULTANEOUS_DOWNLOADS': '2',
     'MAX_DOWNLOAD_THREADS': '10',
+    'MAX_PLAYLIST_ITEMS': '50',
     'STORAGE_PATH': str(_TMP_ROOT),
     'THUMBNAIL_FRAME_SECOND': '10.0',
     'INSTAGRAM_ENCODE_TO_H264': 'True',
