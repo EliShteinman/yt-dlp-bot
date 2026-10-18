@@ -2,6 +2,7 @@ import asyncio
 import os
 import signal
 from abc import ABC
+from collections.abc import Sequence
 from pathlib import Path
 
 from yt_shared.utils.common import wrap
@@ -9,17 +10,23 @@ from yt_shared.utils.tasks.abstract import AbstractTask
 
 
 class AbstractFfBinaryTask(AbstractTask, ABC):
-    _CMD: str | None = None
+    _CMD: tuple[str, ...] | None = None
     _CMD_TIMEOUT = 60
+    _FFMPEG_BASE: tuple[str, ...] = ('ffmpeg', '-y', '-loglevel', 'error')
 
     def __init__(self, file_path: Path) -> None:
         super().__init__()
         self._file_path = file_path
         self._killpg = wrap(os.killpg)
 
-    async def _run_proc(self, cmd: str) -> asyncio.subprocess.Process | None:
-        proc = await asyncio.create_subprocess_shell(
-            cmd=cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+    async def _run_proc(
+        self, cmd: Sequence[str]
+    ) -> asyncio.subprocess.Process | None:
+        proc = await asyncio.create_subprocess_exec(
+            *cmd,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+            start_new_session=True,
         )
         try:
             await asyncio.wait_for(proc.wait(), timeout=self._CMD_TIMEOUT)

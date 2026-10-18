@@ -21,7 +21,15 @@ class InstagramHost(AbstractHostConfig, metaclass=HostConfRegistry):
     FFMPEG_AUDIO_OPTS = None
     # Instagram returns VP9+AAC in MP4 container for logged users and needs to be
     # encoded to H264 since Telegram doesn't play VP9 on iOS.
-    FFMPEG_VIDEO_OPTS = 'ffmpeg -y -loglevel error -i "{filepath}" -c:v libx264 -pix_fmt yuv420p -preset slow -threads 2 -crf 22 -movflags +faststart -c:a copy "{output}"'
+    FFMPEG_VIDEO_OPTS = (
+        '-c:v', 'libx264',
+        '-pix_fmt', 'yuv420p',
+        '-preset', 'slow',
+        '-threads', '2',
+        '-crf', '22',
+        '-movflags', '+faststart',
+        '-c:a', 'copy',
+    )
 
     def build_config(
         self, media_type: DownMediaType, curr_tmp_dir: Path

@@ -4,13 +4,13 @@ from worker.core.tasks.abstract import AbstractFfBinaryTask
 
 
 class GetFfprobeContextTask(AbstractFfBinaryTask):
-    _CMD = 'ffprobe -loglevel error -show_format -show_streams -of json "{filepath}"'
+    _CMD = ('ffprobe', '-loglevel', 'error', '-show_format', '-show_streams', '-of', 'json')
 
     async def run(self) -> dict | None:
         return await self._get_context()
 
     async def _get_context(self) -> dict | None:
-        cmd = self._CMD.format(filepath=self._file_path)
+        cmd = [*self._CMD, str(self._file_path)]
         proc = await self._run_proc(cmd)
         if not proc:
             return None
