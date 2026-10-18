@@ -12,7 +12,7 @@ class WorkerSettings(CommonSettings):
     MAX_DOWNLOAD_THREADS: str
     POT_PROVIDER_BASE_URL: str
     MAX_PLAYLIST_ITEMS: int = Field(gt=0)
-    MAX_VIDEO_HEIGHT: int = Field(gt=0)
+    MAX_VIDEO_HEIGHT: int | None = Field(default=None, gt=0)
 
     @field_validator('MAX_DOWNLOAD_THREADS')
     @classmethod

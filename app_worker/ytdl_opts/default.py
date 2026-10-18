@@ -19,7 +19,7 @@ DEFAULT_YTDL_OPTS: Final[_OptsType] = (
 from typing import Final
 
 from worker.core.config import settings
-from worker.utils import get_cookies_opts_if_not_empty
+from worker.utils import build_resolution_sort_key, get_cookies_opts_if_not_empty
 
 FINAL_AUDIO_FORMAT: Final[str] = 'mp3'
 FINAL_THUMBNAIL_FORMAT: Final[str] = 'jpg'
@@ -55,7 +55,7 @@ PLAYLIST_EXPAND_YTDL_OPTS: Final[_OptsType] = (
 
 DEFAULT_VIDEO_FORMAT_SORT_OPT: Final[_OptsType] = (
     '--format-sort',
-    f'res:{settings.MAX_VIDEO_HEIGHT},vcodec:h265',
+    f'{build_resolution_sort_key(settings.MAX_VIDEO_HEIGHT)},vcodec:h265',
 )
 
 AUDIO_YTDL_OPTS: Final[_OptsType] = (

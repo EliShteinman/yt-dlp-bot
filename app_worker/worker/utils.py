@@ -36,3 +36,8 @@ def get_cookies_opts_if_not_empty() -> tuple[str, str] | tuple:
     if is_file_empty(_COOKIES_FILEPATH):
         return ()
     return _COOKIES_OPTION_NAME, str(_COOKIES_FILEPATH)
+
+
+def build_resolution_sort_key(max_height: int | None) -> str:
+    """Return the yt-dlp format-sort resolution key, optionally capped."""
+    return f'res:{max_height}' if max_height else 'res'
