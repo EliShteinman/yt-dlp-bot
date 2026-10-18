@@ -48,6 +48,8 @@ PLAYLIST_EXPAND_YTDL_OPTS: Final[_OptsType] = (
     '--flat-playlist',
     '--no-playlist',
     '--quiet',
+    '--js-runtimes',
+    'node',
     *get_cookies_opts_if_not_empty(),
 )
 

@@ -5,8 +5,8 @@ from yt_dlp.utils import DownloadError
 from worker.core.playlist_expander import PlaylistExpander
 
 PLAYLIST_URL = 'https://www.youtube.com/playlist?list=PL123'
-FIRST_VIDEO_URL = 'https://www.youtube.com/watch?v=aaa'
-SECOND_VIDEO_URL = 'https://www.youtube.com/watch?v=bbb'
+FIRST_VIDEO_URL = 'https://www.youtube.com/watch?v=aaaaaaaaaaa'
+SECOND_VIDEO_URL = 'https://www.youtube.com/watch?v=bbbbbbbbbbb'
 
 
 @pytest.fixture
@@ -50,7 +50,7 @@ def test_non_playlist_returns_empty(
 ) -> None:
     _stub_flat_info(mocker, expander, meta)
 
-    assert expander.expand(FIRST_VIDEO_URL) == []
+    assert expander.expand(PLAYLIST_URL) == []
 
 
 def test_extraction_error_returns_empty(
@@ -80,3 +80,43 @@ def test_entries_are_capped_at_max_items(mocker: MockerFixture) -> None:
 
 def test_options_skip_ambiguous_playlist_links(expander: PlaylistExpander) -> None:
     assert expander._ytdl_opts['noplaylist'] is True
+
+
+def test_single_video_url_returns_empty(
+    mocker: MockerFixture, expander: PlaylistExpander
+) -> None:
+    mocker.patch.object(expander, '_extract_unprocessed_info')
+
+    assert expander.expand(FIRST_VIDEO_URL) == []
+
+
+def test_single_video_url_skips_extraction(
+    mocker: MockerFixture, expander: PlaylistExpander
+) -> None:
+    extract = mocker.patch.object(expander, '_extract_unprocessed_info')
+    expander.expand(FIRST_VIDEO_URL)
+
+    extract.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    'url',
+    [
+        PLAYLIST_URL,
+        'https://www.youtube.com/@somechannel',
+        'https://www.youtube.com/watch?v=aaaaaaaaaaa&list=PL123',
+    ],
+)
+def test_possible_playlist_url_is_inspected(
+    mocker: MockerFixture, expander: PlaylistExpander, url: str
+) -> None:
+    extract = mocker.patch.object(
+        expander, '_extract_unprocessed_info', return_value=None
+    )
+    expander.expand(url)
+
+    extract.assert_called_once_with(url)
+
+
+def test_options_enable_node_runtime(expander: PlaylistExpander) -> None:
+    assert 'node' in expander._ytdl_opts['js_runtimes']
