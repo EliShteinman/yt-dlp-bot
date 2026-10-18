@@ -55,7 +55,7 @@ PLAYLIST_EXPAND_YTDL_OPTS: Final[_OptsType] = (
 
 DEFAULT_VIDEO_FORMAT_SORT_OPT: Final[_OptsType] = (
     '--format-sort',
-    'res,vcodec:h265',
+    f'res:{settings.MAX_VIDEO_HEIGHT},vcodec:h265',
 )
 
 AUDIO_YTDL_OPTS: Final[_OptsType] = (
