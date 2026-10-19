@@ -75,3 +75,47 @@ async def test_invalid_message_is_rejected(
     await callbacks.on_input_message(message)
 
     message.reject.assert_awaited_once_with(requeue=False)
+
+
+class FailingHandler:
+    async def handle(self, media_payload: object) -> None:  # noqa: ARG002
+        raise RuntimeError('worker crashed mid-task')
+
+
+async def test_message_is_acked_only_after_handling(
+    mocker: MockerFixture, probe: ConcurrencyProbe
+) -> None:
+    events: list[str] = []
+    message = _message(mocker)
+    message.ack.side_effect = lambda: events.append('ack')
+    original_handle = probe.handle
+
+    async def recording_handle(media_payload: object) -> None:
+        await original_handle(media_payload)
+        events.append('handled')
+
+    probe.handle = recording_handle
+    callbacks = RMQCallbacks(payload_handler=probe, max_simultaneous_downloads=1)
+    await callbacks.on_input_message(message)
+
+    assert events == ['handled', 'ack']
+
+
+async def test_crashed_handling_is_not_acked(mocker: MockerFixture) -> None:
+    callbacks = RMQCallbacks(
+        payload_handler=FailingHandler(), max_simultaneous_downloads=1
+    )
+    message = _message(mocker)
+    await callbacks.on_input_message(message)
+
+    message.ack.assert_not_awaited()
+
+
+async def test_crashed_handling_is_dead_lettered(mocker: MockerFixture) -> None:
+    callbacks = RMQCallbacks(
+        payload_handler=FailingHandler(), max_simultaneous_downloads=1
+    )
+    message = _message(mocker)
+    await callbacks.on_input_message(message)
+
+    message.reject.assert_awaited_once_with(requeue=False)
