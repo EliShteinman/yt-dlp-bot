@@ -24,6 +24,12 @@ class RabbitPayloadType(StrChoiceEnum):
     DOWNLOAD_ERROR = 'DOWNLOAD_ERROR'
     GENERAL_ERROR = 'GENERAL_ERROR'
     SUCCESS = 'SUCCESS'
+    PROGRESS = 'PROGRESS'
+
+
+class ProgressStage(StrChoiceEnum):
+    PLAYLIST_QUEUED = 'PLAYLIST_QUEUED'
+    DOWNLOADING = 'DOWNLOADING'
 
 
 class TelegramChatType(StrChoiceEnum):

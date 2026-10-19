@@ -1,8 +1,10 @@
 import asyncio
 import logging
 
+from yt_shared.enums import ProgressStage
 from yt_shared.rabbit.publisher import RmqPublisher
 from yt_shared.schemas.media import InbMediaPayload
+from yt_shared.schemas.progress import DownloadProgressPayload
 
 from worker.core.playlist_expander import PlaylistExpander
 
@@ -24,7 +26,23 @@ class PlaylistFanOut:
 
         for entry_url in entry_urls:
             await self._publish_entry(media_payload, entry_url)
+        await self._announce_playlist(media_payload, entry_count=len(entry_urls))
         return True
+
+    async def _announce_playlist(
+        self, media_payload: InbMediaPayload, entry_count: int
+    ) -> None:
+        if media_payload.from_chat_id is None:
+            return
+        await self._publisher.send_progress(
+            DownloadProgressPayload(
+                stage=ProgressStage.PLAYLIST_QUEUED,
+                from_chat_id=media_payload.from_chat_id,
+                message_id=media_payload.message_id,
+                url=media_payload.url,
+                entry_count=entry_count,
+            )
+        )
 
     async def _publish_entry(self, media_payload: InbMediaPayload, url: str) -> None:
         entry_payload = media_payload.model_copy(

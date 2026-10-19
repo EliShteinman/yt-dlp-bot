@@ -44,6 +44,7 @@ class CommonSettings(BaseSettings):
     CONSUMER_NUMBER_OF_RETRY: PositiveInt = 2
     RESEND_DELAY_MS: PositiveInt = 60000
     RABBITMQ_CONSUMER_TIMEOUT_MS: PositiveInt
+    RABBITMQ_PROGRESS_TTL_MS: PositiveInt
 
     LOG_LEVEL: str
     REDIS_HOST: str

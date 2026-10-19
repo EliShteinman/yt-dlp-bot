@@ -35,6 +35,7 @@ _ENV_DEFAULTS: dict[str, str] = {
     'RABBITMQ_HOST': 'localhost',
     'RABBITMQ_PORT': '5672',
     'RABBITMQ_CONSUMER_TIMEOUT_MS': '21600000',
+    'RABBITMQ_PROGRESS_TTL_MS': '60000',
     'LOG_LEVEL': 'INFO',
     'REDIS_HOST': 'localhost',
     'TMP_DOWNLOAD_ROOT_PATH': tempfile.gettempdir(),

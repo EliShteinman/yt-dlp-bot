@@ -15,6 +15,9 @@ ERROR_EXCHANGE = 'error.dx'
 DEAD_LETTER_QUEUE = 'dead.q'
 DEAD_LETTER_EXCHANGE = 'dead.fx'
 
+PROGRESS_QUEUE = 'progress.q'
+PROGRESS_EXCHANGE = 'progress.dx'
+
 
 def _work_queue(name: str) -> dict[str, Any]:
     return {
@@ -36,6 +39,15 @@ def get_rabbit_config() -> dict[str, list[dict[str, Any]]]:
             _work_queue(INPUT_QUEUE),
             _work_queue(ERROR_QUEUE),
             _work_queue(SUCCESS_QUEUE),
+            {
+                'name': PROGRESS_QUEUE,
+                'auto_delete': False,
+                'durable': True,
+                'arguments': {
+                    'x-queue-type': 'quorum',
+                    'x-message-ttl': settings.RABBITMQ_PROGRESS_TTL_MS,
+                },
+            },
             {
                 'name': DEAD_LETTER_QUEUE,
                 'auto_delete': False,
@@ -63,6 +75,12 @@ def get_rabbit_config() -> dict[str, list[dict[str, Any]]]:
                 'type': ExchangeType.DIRECT.value,
             },
             {
+                'name': PROGRESS_EXCHANGE,
+                'auto_delete': False,
+                'durable': True,
+                'type': ExchangeType.DIRECT.value,
+            },
+            {
                 'name': DEAD_LETTER_EXCHANGE,
                 'auto_delete': False,
                 'durable': True,
@@ -73,6 +91,7 @@ def get_rabbit_config() -> dict[str, list[dict[str, Any]]]:
             INPUT_QUEUE: [{'exchange_name': INPUT_EXCHANGE}],
             ERROR_QUEUE: [{'exchange_name': ERROR_EXCHANGE}],
             SUCCESS_QUEUE: [{'exchange_name': SUCCESS_EXCHANGE}],
+            PROGRESS_QUEUE: [{'exchange_name': PROGRESS_EXCHANGE}],
             DEAD_LETTER_QUEUE: [{'exchange_name': DEAD_LETTER_EXCHANGE}],
         },
     }

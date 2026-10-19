@@ -1,7 +1,7 @@
 import glob
 import logging
 import shutil
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import ClassVar
@@ -43,16 +43,26 @@ class MediaDownloader:
         )
 
     def download(
-        self, host_conf: AbstractHostConfig, media_payload: InbMediaPayload
+        self,
+        host_conf: AbstractHostConfig,
+        media_payload: InbMediaPayload,
+        progress_hooks: Sequence[Callable[[dict], None]] = (),
     ) -> DownMedia:
         try:
-            return self._download(host_conf=host_conf, media_payload=media_payload)
+            return self._download(
+                host_conf=host_conf,
+                media_payload=media_payload,
+                progress_hooks=progress_hooks,
+            )
         except Exception:
             self._log.error('Failed to download %s', host_conf.url)
             raise
 
     def _download(
-        self, host_conf: AbstractHostConfig, media_payload: InbMediaPayload
+        self,
+        host_conf: AbstractHostConfig,
+        media_payload: InbMediaPayload,
+        progress_hooks: Sequence[Callable[[dict], None]],
     ) -> DownMedia:
         media_type = media_payload.download_media_type
         url = host_conf.url
@@ -65,7 +75,11 @@ class MediaDownloader:
                 media_type=media_type, curr_tmp_dir=curr_tmp_dir
             )
 
-            with yt_dlp.YoutubeDL(ytdl_opts_model.ytdl_opts) as ytdl:
+            ytdl_opts = {
+                **ytdl_opts_model.ytdl_opts,
+                'progress_hooks': list(progress_hooks),
+            }
+            with yt_dlp.YoutubeDL(ytdl_opts) as ytdl:
                 self._log.info('Downloading "%s" to "%s"', url, curr_tmp_dir)
                 self._log.info(
                     'Downloading with options: %s', ytdl_opts_model.ytdl_opts
