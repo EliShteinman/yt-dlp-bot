@@ -57,10 +57,14 @@ Version: 1.8.0. [Release details](RELEASES.md) (read the upgrade steps when comi
    The worker runs as UID 1000, so the host directory must be writable by it
    (e.g. `sudo chown 1000:1000 /data/downloads`).
 10. Change application's `LOG_LEVEL` in `envs/common.env` to `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL` if needed
-11. Generate the database and message broker passwords (once; an existing file is never overwritten):
+11. Create `envs/secrets.env` with the database and message broker passwords, either by
+    generating random ones (an existing file is never overwritten):
     ```bash
     scripts/generate-secrets.sh
     ```
+    or by hand from `envs/secrets.env.example` (keep `RABBITMQ_DEFAULT_PASS` equal to
+    `RABBITMQ_PASSWORD`). Postgres and RabbitMQ store the password on their first start, so
+    changing the file later also requires changing the password inside them.
 
 ## 🏃 Run
 
@@ -104,8 +108,10 @@ tells you how many videos were queued. If something goes wrong you get an error 
    checking [available options](https://github.com/yt-dlp/yt-dlp/blob/master/yt_dlp/YoutubeDL.py#L180).
 2. Default max simultaneous video downloads by worker service is 2. Change
    the `MAX_SIMULTANEOUS_DOWNLOADS` variable in `envs/worker.env` to desired value but
-   keep in mind that the shared download volume is a 27168m (~27GB) tmpfs in
-   `docker-compose.yml`, so it may be not enough if you download a lot of large videos at once.
+   keep in mind that downloads are stored in the `shared-tmpfs` volume, a tmpfs that lives in
+   RAM. Its maximum size is the `size=` option in `docker-compose.yml` (27168m by default);
+   it is not reserved up front, but filling it uses memory, so set it below your free RAM and
+   large enough for the videos downloaded at once.
    A playlist is split into at most `MAX_PLAYLIST_ITEMS` videos (default 50).
 3. `yt-dlp` will try to download video thumbnail if it exists. In other case Worker
    service (particularly the FFmpeg process) will make a JPEG thumbnail from the
@@ -114,8 +120,10 @@ tells you how many videos were queued. If something goes wrong you get an error 
    shorter, it will make it on `video length / 2` time point because the FFmpeg process
    will error out. Change the `THUMBNAIL_FRAME_SECOND` variable if needed in
    the `envs/worker.env` file.
-4. Telegram bots can upload files up to 2GB (2147483648 bytes), which is
-   reflected in `upload_video_max_file_size` in the example config. The worker picks the
+4. Telegram limits uploads by the account that uploads, which here is the bot: 2GB
+   (2147483648 bytes), reflected in `upload_video_max_file_size` in the example config.
+   The 4GB Telegram Premium limit belongs to user accounts, so a Premium recipient does
+   not raise it. The worker picks the
    best format whose size fits `MAX_VIDEO_FILESIZE` in `envs/worker.env` (default `1900M`,
    leaving room for audio and size estimates); remove it for no limit. Uncomment
    `MAX_VIDEO_HEIGHT` there to also cap the resolution (e.g. `1080`).
@@ -140,9 +148,9 @@ details
 
 - **API**: `127.0.0.1:1984` on the host, no auth, so it is not reachable from the
   network. Port and binding can be changed in `docker-compose.yml`.
-- **RabbitMQ**: user `yt`, password in `envs/secrets.env`; AMQP on `127.0.0.1:25672`,
+- **RabbitMQ**: user `yt` (`RABBITMQ_USER` in `envs/common.env`), password in `envs/secrets.env`; AMQP on `127.0.0.1:25672`,
   management UI on `127.0.0.1:15672`.
-- **PostgreSQL**: user `yt`, password in `envs/secrets.env`; `127.0.0.1:5435`.
+- **PostgreSQL**: user `yt` (`POSTGRES_USER` in `envs/common.env`), password in `envs/secrets.env`; `127.0.0.1:5435`.
 
 Use an SSH tunnel to reach them from another machine.
 
