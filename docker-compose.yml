@@ -14,6 +14,7 @@ services:
     env_file:
       - envs/common.env
       - envs/api.env
+      - envs/secrets.env
     restart: unless-stopped
     ports:
       # Bound to localhost only: the API has no authentication and is not used
@@ -33,6 +34,7 @@ services:
     env_file:
       - envs/common.env
       - envs/bot.env
+      - envs/secrets.env
     restart: unless-stopped
     command: >
       bash -c "python start.py && python main.py"
@@ -51,6 +53,7 @@ services:
     env_file:
       - envs/common.env
       - envs/worker.env
+      - envs/secrets.env
     restart: unless-stopped
     command: >
       bash -c "python start.py && alembic upgrade head && python main.py"
@@ -80,6 +83,7 @@ services:
     image: "postgres:18"
     env_file:
       - envs/common.env
+      - envs/secrets.env
     ports:
       - "127.0.0.1:5435:5432"
     restart: unless-stopped
@@ -88,6 +92,9 @@ services:
   yt_rabbitmq:
     image: "rabbitmq:4.3-management-alpine"
     container_name: yt_rabbitmq
+    env_file:
+      - envs/common.env
+      - envs/secrets.env
     ports:
       - "127.0.0.1:25672:5672"
       - "127.0.0.1:15672:15672"
