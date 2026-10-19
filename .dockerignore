@@ -8,7 +8,9 @@
 .dockerignore
 .github
 .gitignore
-.ruff_cache
+**/.ruff_cache
+**/.pytest_cache
+**/__pycache__
 .releases
 **/*Dockerfile*
 LICENSE
