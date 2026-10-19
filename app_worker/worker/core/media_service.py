@@ -137,10 +137,10 @@ class MediaService:
                     EncodeToH264Task(
                         media=media, encode_opts=host_conf.FFMPEG_VIDEO_OPTS
                     ).run(),
-                    task_name=EncodeToH264Task.__class__.__name__,
+                    task_name=EncodeToH264Task.__name__,
                     logger=self._log,
                     exception_message='Task "%s" raised an exception',
-                    exception_message_args=(EncodeToH264Task.__class__.__name__,),
+                    exception_message_args=(EncodeToH264Task.__name__,),
                 )
             )
 
@@ -196,10 +196,10 @@ class MediaService:
             MakeThumbnailTask(
                 thumb_path, file_path, duration=duration, video_ctx=video_ctx
             ).run(),
-            task_name=MakeThumbnailTask.__class__.__name__,
+            task_name=MakeThumbnailTask.__name__,
             logger=self._log,
             exception_message='Task "%s" raised an exception',
-            exception_message_args=(MakeThumbnailTask.__class__.__name__,),
+            exception_message_args=(MakeThumbnailTask.__name__,),
         )
 
     async def _copy_file_to_storage(self, file: BaseMedia) -> None:

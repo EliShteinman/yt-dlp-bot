@@ -16,7 +16,7 @@ class SuccessDownloadResultWorker(AbstractDownloadResultWorker):
         self._spawn_handler_task(body)
 
     def _spawn_handler_task(self, body: SuccessDownloadPayload) -> None:
-        task_name = self.HANDLER_CLS.__class__.__name__
+        task_name = self.HANDLER_CLS.__name__
         create_task(
             self.HANDLER_CLS(body=body, bot=self._bot).handle(),
             task_name=task_name,
