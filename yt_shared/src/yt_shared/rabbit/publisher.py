@@ -25,11 +25,17 @@ class RmqPublisher(metaclass=Singleton):
         self._rabbit_mq = get_rabbitmq()
 
     @staticmethod
+    def _persistent_message(body: bytes) -> aio_pika.Message:
+        return aio_pika.Message(
+            body=body, delivery_mode=aio_pika.DeliveryMode.PERSISTENT
+        )
+
+    @staticmethod
     def _is_sent(confirm: ConfirmationFrameType | None) -> bool:
         return isinstance(confirm, Basic.Ack)
 
     async def send_for_download(self, media_payload: InbMediaPayload) -> bool:
-        message = aio_pika.Message(body=media_payload.model_dump_json().encode())
+        message = self._persistent_message(media_payload.model_dump_json().encode())
         exchange = self._rabbit_mq.exchanges[INPUT_EXCHANGE]
         confirm = await exchange.publish(
             message, routing_key=INPUT_QUEUE, mandatory=True
@@ -40,7 +46,7 @@ class RmqPublisher(metaclass=Singleton):
         self, error_payload: ErrorDownloadPayload | ErrorDownloadGeneralPayload
     ) -> bool:
         err_exchange = self._rabbit_mq.exchanges[ERROR_EXCHANGE]
-        err_message = aio_pika.Message(body=error_payload.model_dump_json().encode())
+        err_message = self._persistent_message(error_payload.model_dump_json().encode())
         confirm = await err_exchange.publish(
             err_message, routing_key=ERROR_QUEUE, mandatory=True
         )
@@ -49,7 +55,7 @@ class RmqPublisher(metaclass=Singleton):
     async def send_download_finished(
         self, success_payload: SuccessDownloadPayload
     ) -> bool:
-        message = aio_pika.Message(body=success_payload.model_dump_json().encode())
+        message = self._persistent_message(success_payload.model_dump_json().encode())
         exchange = self._rabbit_mq.exchanges[SUCCESS_EXCHANGE]
         confirm = await exchange.publish(
             message, routing_key=SUCCESS_QUEUE, mandatory=True

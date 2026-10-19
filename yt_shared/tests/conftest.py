@@ -15,6 +15,7 @@ _ENV_DEFAULTS: dict[str, str] = {
     'RABBITMQ_PASSWORD': 'guest',
     'RABBITMQ_HOST': 'localhost',
     'RABBITMQ_PORT': '5672',
+    'RABBITMQ_CONSUMER_TIMEOUT_MS': '21600000',
     'LOG_LEVEL': 'INFO',
     'REDIS_HOST': 'localhost',
     'TMP_DOWNLOAD_ROOT_PATH': '.',
