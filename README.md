@@ -52,6 +52,10 @@ Version: 1.7.3. [Release details](RELEASES.md).
          - "D:/Videos:/filestorage"
    ```
 10. Change application's `LOG_LEVEL` in `envs/common.env` to `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL` if needed
+11. Generate the database and message broker passwords (once; an existing file is never overwritten):
+    ```bash
+    scripts/generate-secrets.sh
+    ```
 
 ## 🏃 Run
 
