@@ -36,24 +36,24 @@ DEFAULT_SLEEP_TIME: int = 1
 
 
 class ServiceRegistry(type):
-    registry: ClassVar[dict[str, type['BaseService']]] = {}
+    registry: ClassVar[dict[str, type[BaseService]]] = {}
 
     def __new__(
-        cls: type['ServiceRegistry'],
+        cls: type[ServiceRegistry],
         name: str,
-        bases: tuple[type['BaseService']],
+        bases: tuple[type[BaseService]],
         attrs: dict,
-    ) -> type['BaseService']:
+    ) -> type[BaseService]:
         service_cls: type[BaseService] = type.__new__(cls, name, bases, attrs)
         cls.registry[service_cls.__name__] = service_cls
         return service_cls
 
     @classmethod
-    def get_registry(cls) -> dict[str, type['BaseService']]:
+    def get_registry(cls) -> dict[str, type[BaseService]]:
         return cls.registry.copy()
 
     @classmethod
-    def get_instances(cls) -> Generator['BaseService', None, None]:
+    def get_instances(cls) -> Generator[BaseService]:
         return (service_cls() for service_cls in cls.registry.values())
 
 

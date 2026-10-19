@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 class RabbitWorkerManager:
     _TASK_TYPES = (ErrorDownloadResultWorker, SuccessDownloadResultWorker)
 
-    def __init__(self, bot: 'VideoBotClient') -> None:
+    def __init__(self, bot: VideoBotClient) -> None:
         self._log = logging.getLogger(self.__class__.__name__)
         self._bot = bot
         self._workers: dict[RabbitWorkerType, Task] = {}

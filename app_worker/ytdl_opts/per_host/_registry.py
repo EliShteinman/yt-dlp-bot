@@ -8,7 +8,7 @@ class HostConfRegistry(type):
     HOST_TO_CLS_MAP: ClassVar[dict[str | None, type[AbstractHostConfig]]] = {}
 
     def __new__(
-        cls: type['HostConfRegistry'],
+        cls: type[HostConfRegistry],
         name: str,
         bases: tuple[type[AbstractHostConfig]],
         attrs: dict,
