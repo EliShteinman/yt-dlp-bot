@@ -6,7 +6,7 @@ readme = "README.md"
 authors = [
     { name = "tropicoo", email = "888784+tropicoo@users.noreply.github.com" }
 ]
-requires-python = ">=3.12"
+requires-python = ">=3.14"
 dependencies = [
     "aio-pika>=9.5.4",
     "aiohttp>=3.11.11",

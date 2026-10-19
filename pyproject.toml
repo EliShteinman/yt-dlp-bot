@@ -82,7 +82,7 @@ app-worker = { path = "app_worker" }
 [project]
 name = "yt-dlp-bot"
 version = "0.1.0"
-requires-python = ">=3.12"
+requires-python = ">=3.14"
 description = "Add your description here"
 readme = "README.md"
 dependencies = [
