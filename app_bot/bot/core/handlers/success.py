@@ -117,7 +117,6 @@ class SuccessDownloadHandler(AbstractDownloadHandler):
 
     async def _create_upload_task(self, media_object: BaseMedia) -> None:
         """Upload video to Telegram chat."""
-        semaphore = asyncio.Semaphore(value=self._bot.conf.telegram.max_upload_tasks)
         upload_task_cls = self._UPLOAD_TASK_MAP[media_object.file_type]
         task_name = upload_task_cls.__name__
         await create_task(
@@ -125,7 +124,7 @@ class SuccessDownloadHandler(AbstractDownloadHandler):
                 media_object=media_object,
                 users=self._receiving_users,
                 bot=self._bot,
-                semaphore=semaphore,
+                semaphore=self._bot.upload_slots,
                 context=self._body,
             ).run(),
             task_name=task_name,
