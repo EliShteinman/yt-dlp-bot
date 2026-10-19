@@ -25,7 +25,6 @@ class TelegramCallback:
         await message.reply(
             bold('Send video URL to start processing'),
             parse_mode=ParseMode.HTML,
-            reply_to_message_id=message.id,
         )
 
     async def on_message(self, client: VideoBotClient, message: Message) -> None:
@@ -59,7 +58,6 @@ class TelegramCallback:
         return await message.reply(
             text=self._format_acknowledge_text(url_count),
             parse_mode=ParseMode.HTML,
-            reply_to_message_id=message.id,
         )
 
     def _format_acknowledge_text(self, url_count: int) -> str:

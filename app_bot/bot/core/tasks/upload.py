@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 from pydantic import ConfigDict, FilePath
 from pyrogram.enums import ChatAction, MessageMediaType, ParseMode
-from pyrogram.types import Animation, Message
+from pyrogram.types import Animation, Message, ReplyParameters
 from pyrogram.types import Audio as _Audio
 from pyrogram.types import Video as _Video
 from tenacity import retry, stop_after_attempt, wait_fixed
@@ -108,7 +108,9 @@ class AbstractUploadTask(AbstractTask, ABC):
                     'parse_mode': ParseMode.HTML,
                 }
                 if self._ctx.message_id:
-                    kwargs['reply_to_message_id'] = self._ctx.message_id
+                    kwargs['reply_parameters'] = ReplyParameters(
+                        message_id=self._ctx.message_id
+                    )
                 coros.append(self._bot.send_message(**kwargs))
         await asyncio.gather(*coros)
 

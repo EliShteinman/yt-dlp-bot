@@ -3,6 +3,7 @@ from typing import Any, ClassVar
 
 from pyrogram.enums import ParseMode
 from pyrogram.errors import RPCError
+from pyrogram.types import ReplyParameters
 from yt_shared.enums import RabbitPayloadType
 from yt_shared.schemas.error import ErrorDownloadGeneralPayload, ErrorDownloadPayload
 
@@ -54,7 +55,9 @@ class ErrorDownloadHandler(AbstractDownloadHandler):
             'parse_mode': ParseMode.HTML,
         }
         if self._body.message_id:
-            kwargs['reply_to_message_id'] = self._body.message_id
+            kwargs['reply_parameters'] = ReplyParameters(
+                message_id=self._body.message_id
+            )
         try:
             await self._bot.send_message(**kwargs)
         except RPCError:

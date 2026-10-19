@@ -43,7 +43,8 @@ async def test_error_replies_to_original_message(
 ) -> None:
     await handler.handle()
 
-    assert bot.send_message.await_args.kwargs['reply_to_message_id'] == MESSAGE_ID
+    reply = bot.send_message.await_args.kwargs['reply_parameters']
+    assert reply.message_id == MESSAGE_ID
 
 
 async def test_error_removes_acknowledgment_message(

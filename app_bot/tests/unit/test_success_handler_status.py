@@ -52,7 +52,8 @@ async def test_upload_status_replies_to_original_message(
 ) -> None:
     await handler._upload_with_status(media_object)
 
-    assert bot.send_message.await_args.kwargs['reply_to_message_id'] == MESSAGE_ID
+    reply = bot.send_message.await_args.kwargs['reply_parameters']
+    assert reply.message_id == MESSAGE_ID
 
 
 async def test_upload_status_is_removed_after_upload(

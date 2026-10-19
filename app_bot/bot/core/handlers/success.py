@@ -4,7 +4,7 @@ from typing import Any, ClassVar
 
 from pyrogram.enums import ParseMode
 from pyrogram.errors import RPCError
-from pyrogram.types import Message
+from pyrogram.types import Message, ReplyParameters
 from yt_shared.emoji import SUCCESS_EMOJI
 from yt_shared.enums import MediaFileType, TaskSource
 from yt_shared.rabbit.publisher import RmqPublisher
@@ -59,7 +59,7 @@ class SuccessDownloadHandler(AbstractDownloadHandler):
         return await self._bot.send_message(
             chat_id=self._body.from_chat_id,
             text=f'⬆️ {bold(f"Uploading {media_object.file_size_human()}")}',
-            reply_to_message_id=self._body.message_id,
+            reply_parameters=ReplyParameters(message_id=self._body.message_id),
         )
 
     async def _delete_upload_status(self, status_message: Message | None) -> None:
@@ -150,7 +150,9 @@ class SuccessDownloadHandler(AbstractDownloadHandler):
                     'parse_mode': ParseMode.HTML,
                 }
                 if self._body.message_id:
-                    kwargs['reply_to_message_id'] = self._body.message_id
+                    kwargs['reply_parameters'] = ReplyParameters(
+                        message_id=self._body.message_id
+                    )
                 await self._bot.send_message(**kwargs)
 
     def _upload_is_enabled(self) -> bool:
