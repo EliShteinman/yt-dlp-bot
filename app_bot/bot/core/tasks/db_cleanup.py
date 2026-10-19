@@ -17,6 +17,9 @@ class DbCleanupTask(AbstractTask):
         await self._run()
 
     async def _run(self) -> None:
+        if not self._user_ids:
+            self._log.info('No users opted out of saving to the database')
+            return
         while True:
             self._log.info('Deleting DB data')
             await self._delete_data()

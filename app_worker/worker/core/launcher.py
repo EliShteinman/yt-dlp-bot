@@ -5,6 +5,7 @@ from yt_dlp import version as ytdlp_version
 from yt_shared.db.session import get_db
 from yt_shared.rabbit import get_rabbitmq
 from yt_shared.rabbit.rabbit_config import INPUT_QUEUE
+from yt_shared.repositories.task import TaskRepository
 from yt_shared.repositories.ytdlp import YtdlpRepository
 from yt_shared.utils.common import register_shutdown
 
@@ -32,6 +33,7 @@ class WorkerLauncher:
             await asyncio.sleep(self._RUN_FOREVER_SLEEP_SECONDS)
 
     async def _perform_setup(self) -> None:
+        await self._fail_interrupted_tasks()
         await asyncio.gather(
             *(
                 self._setup_rabbit(),
@@ -48,6 +50,15 @@ class WorkerLauncher:
             prefetch_count=settings.MAX_SIMULTANEOUS_DOWNLOADS
         )
         await self._rabbit_mq.queues[INPUT_QUEUE].consume(cb.on_input_message)
+
+    async def _fail_interrupted_tasks(self) -> None:
+        async for db in get_db():
+            failed_count = await TaskRepository(db).fail_interrupted_tasks()
+        if failed_count:
+            self._log.warning(
+                'Marked %d task(s) interrupted by a previous worker run as failed',
+                failed_count,
+            )
 
     async def _set_yt_dlp_version(self) -> None:
         curr_version = ytdlp_version.__version__

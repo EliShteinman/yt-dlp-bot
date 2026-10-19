@@ -4,7 +4,17 @@ from collections.abc import Sequence
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import Column, Row, delete, desc, distinct, func, insert, select
+from sqlalchemy import (
+    Column,
+    Row,
+    delete,
+    desc,
+    distinct,
+    func,
+    insert,
+    select,
+    update,
+)
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
@@ -19,6 +29,8 @@ if TYPE_CHECKING:
 
 
 class TaskRepository:
+    INTERRUPTED_TASK_ERROR = 'Interrupted: the worker restarted while processing'
+
     def __init__(self, db: AsyncSession) -> None:
         self._log = logging.getLogger(self.__class__.__name__)
         self._db = db
@@ -91,13 +103,24 @@ class TaskRepository:
         await self._db.commit()
 
     async def purge_user_tasks(self, user_ids: Sequence[int]) -> None:
+        if not user_ids:
+            return
         await self._db.execute(
             delete(Task).where(
-                ((Task.from_user_id.in_(user_ids)) | (Task.from_user_id.is_(None)))
+                Task.from_user_id.in_(user_ids)
                 & ~(Task.status.in_([TaskStatus.PENDING, TaskStatus.PROCESSING]))
             )
         )
         await self._db.commit()
+
+    async def fail_interrupted_tasks(self) -> int:
+        result: CursorResult = await self._db.execute(
+            update(Task)
+            .where(Task.status == TaskStatus.PROCESSING)
+            .values(status=TaskStatus.FAILED, error=self.INTERRUPTED_TASK_ERROR)
+        )
+        await self._db.commit()
+        return result.rowcount
 
     async def get_all_tasks(
         self,
