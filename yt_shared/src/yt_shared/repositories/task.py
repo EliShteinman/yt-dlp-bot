@@ -95,6 +95,7 @@ class TaskRepository:
 
     async def save_as_processing(self, task: Task) -> None:
         task.status = TaskStatus.PROCESSING
+        task.error = None
         await self._db.commit()
 
     async def save_as_failed(self, task: Task, error_message: str) -> None:

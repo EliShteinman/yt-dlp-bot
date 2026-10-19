@@ -41,9 +41,17 @@ class MediaService:
 
     async def process(self) -> tuple[DownMedia | None, Task | None]:
         self._task = await self._repository.get_or_create_task(self._media_payload)
-        if self._task.status != TaskStatus.PENDING.value:
+        if not self._is_runnable(self._task):
             return None, None
         return (await self._process(), self._task)
+
+    @staticmethod
+    def _is_runnable(task: Task) -> bool:
+        interrupted = (
+            task.status == TaskStatus.FAILED.value
+            and task.error == TaskRepository.INTERRUPTED_TASK_ERROR
+        )
+        return task.status == TaskStatus.PENDING.value or interrupted
 
     async def _process(self) -> DownMedia:
         host_conf = self._get_host_conf()

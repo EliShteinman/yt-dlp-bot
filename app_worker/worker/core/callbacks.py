@@ -38,8 +38,8 @@ class RMQCallbacks:
             return
 
         async with self._download_slots:
-            await message.ack()
             await self._payload_handler.handle(media_payload=media_payload)
+            await message.ack()
         self._log.info('Processing done with payload: %s', media_payload)
 
     async def _reject_invalid_message(self, message: IncomingMessage) -> None:
