@@ -86,7 +86,7 @@ app-worker = { path = "app_worker" }
 name = "yt-dlp-bot"
 version = "0.1.0"
 requires-python = ">=3.14"
-description = "Add your description here"
+description = "Telegram bot and REST API that download media with yt-dlp"
 readme = "README.md"
 dependencies = [
     "app-api",

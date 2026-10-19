@@ -1,8 +1,7 @@
 [project]
 name = "yt-shared"
 version = "0.1.0"
-description = "Add your description here"
-readme = "README.md"
+description = "Shared models, schemas, database and RabbitMQ code for yt-dlp-bot"
 authors = [
     { name = "tropicoo", email = "888784+tropicoo@users.noreply.github.com" }
 ]

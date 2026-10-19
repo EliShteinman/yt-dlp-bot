@@ -2,8 +2,7 @@
 name = "app_api"
 version = "0.1.0"
 requires-python = ">=3.14"
-description = "Add your description here"
-readme = "README.md"
+description = "REST API for creating and inspecting download tasks"
 dependencies = [
     "fastapi-cache2[redis]>=0.2.2",
     "fastapi>=0.115.6",
