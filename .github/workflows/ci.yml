@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: astral-sh/setup-uv@v10.3.0
+      - run: uvx pre-commit@4.7.0 run --all-files --show-diff-on-failure
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # coverage_floor: current total per component; may only go up.
+          - { component: yt_shared, deps_from: app_worker, cov: yt_shared, coverage_floor: 69 }
+          - { component: app_worker, deps_from: app_worker, cov: worker, coverage_floor: 57 }
+          - { component: app_bot, deps_from: app_bot, cov: bot, coverage_floor: 58 }
+          - { component: app_api, deps_from: app_api, cov: api, coverage_floor: 40 }
+    env:
+      UV_PROJECT_ENVIRONMENT: ${{ github.workspace }}/.venv-ci
+      PYTHON: ${{ github.workspace }}/.venv-ci/bin/python
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v10.3.0
+        with:
+          python-version: '3.14'
+
+      - name: Install dependencies (as the Docker images do)
+        run: |
+          (cd yt_shared && uv sync --frozen --no-install-project)
+          (cd ${{ matrix.deps_from }} && uv sync --frozen --no-install-project --inexact)
+          uv export --frozen --only-group test --no-hashes --no-emit-project > "$RUNNER_TEMP/test-requirements.txt"
+          uv pip install --python "$PYTHON" -e ./yt_shared -r "$RUNNER_TEMP/test-requirements.txt" diff-cover==10.6.0
+
+      - name: Install nightly yt-dlp (as the worker image does)
+        if: matrix.deps_from == 'app_worker'
+        run: uv pip install --python "$PYTHON" --upgrade --pre "yt-dlp[default]"
+
+      - name: Test
+        working-directory: ${{ matrix.component }}
+        run: >
+          "$PYTHON" -m pytest -m "not network"
+          --cov=${{ matrix.cov }} --cov-report=xml --cov-report=term
+          --cov-fail-under=${{ matrix.coverage_floor }}
+
+      - name: Require 80% coverage on changed lines
+        if: github.event_name == 'pull_request'
+        working-directory: ${{ matrix.component }}
+        run: >
+          "$PYTHON" -m diff_cover.diff_cover_tool coverage.xml
+          --compare-branch=origin/${{ github.base_ref }} --fail-under=80

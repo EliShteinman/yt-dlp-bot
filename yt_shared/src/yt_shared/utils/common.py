@@ -1,6 +1,6 @@
 import asyncio
 import atexit
-import datetime
+import datetime as dt
 import random
 import signal
 from collections.abc import Callable
@@ -74,7 +74,7 @@ def register_shutdown(callback: Callable) -> None:
     signal.signal(signal.SIGINT, callback)
 
 
-def remove_microseconds(dt_: datetime.datetime) -> datetime.datetime:
+def remove_microseconds(dt_: dt.datetime) -> dt.datetime:
     return dt_.replace(microsecond=0)
 
 

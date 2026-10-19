@@ -1,5 +1,5 @@
 import asyncio
-import datetime
+import datetime as dt
 from typing import TYPE_CHECKING
 
 from yt_shared.clients.github import YtdlpGithubClient
@@ -51,10 +51,10 @@ class YtdlpNewVersionNotifyTask(AbstractTask):
             )
             await asyncio.sleep(self._ytdlp_conf.version_check_interval)
 
-    def _get_next_check_datetime(self) -> datetime.datetime:
+    def _get_next_check_datetime(self) -> dt.datetime:
         return (
-            datetime.datetime.now(datetime.UTC)
-            + datetime.timedelta(seconds=self._ytdlp_conf.version_check_interval)
+            dt.datetime.now(dt.UTC)
+            + dt.timedelta(seconds=self._ytdlp_conf.version_check_interval)
         ).replace(microsecond=0)
 
     async def _notify_if_new_version(self) -> None:
