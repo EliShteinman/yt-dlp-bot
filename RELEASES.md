@@ -23,8 +23,9 @@ Release date: October 19, 2026
 
 Back up your database first, then, in this order:
 
-1. `git pull`, then generate the passwords once (Postgres and RabbitMQ no longer
-   use the defaults from git):
+1. `git pull`, then create `envs/secrets.env` (Postgres and RabbitMQ no longer use
+   the defaults from git) with random passwords, or by hand from
+   `envs/secrets.env.example`:
    ```bash
    scripts/generate-secrets.sh
    ```
