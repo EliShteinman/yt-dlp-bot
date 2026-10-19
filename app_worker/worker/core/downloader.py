@@ -301,7 +301,7 @@ class MediaDownloader:
 
         try:
             return requested_video['filepath']
-        except (AttributeError, KeyError):
+        except AttributeError, KeyError:
             err_msg = 'Video filepath not found'
             self._log.exception('%s, meta: %s', err_msg, meta)
             raise ValueError(err_msg) from None

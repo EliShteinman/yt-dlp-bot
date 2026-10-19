@@ -9,6 +9,7 @@ T = TypeVar('T')
 
 def create_task[T](  # noqa: PLR0913
     coroutine: Awaitable[T],
+    *,
     logger: logging.Logger,
     loop: asyncio.AbstractEventLoop | None = None,
     task_name: str | None = None,

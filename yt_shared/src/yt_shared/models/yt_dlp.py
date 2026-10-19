@@ -1,4 +1,4 @@
-import datetime
+import datetime as dt
 
 import sqlalchemy as sa
 from sqlalchemy import func
@@ -14,6 +14,6 @@ class YTDLP(Base):
     updated_at = sa.Column(
         sa.DateTime,
         nullable=False,
-        default=datetime.datetime.utcnow,
+        default=dt.datetime.utcnow,
         onupdate=func.now(),
     )

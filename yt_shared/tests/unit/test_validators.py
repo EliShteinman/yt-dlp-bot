@@ -23,14 +23,14 @@ def test_public_url_accepts_public_http(url: str) -> None:
 @pytest.mark.parametrize(
     'url',
     [
-        'ftp://example.com/x',            # non-http scheme
-        'file:///etc/passwd',             # file scheme
-        'http://localhost/admin',         # loopback hostname
-        'http://127.0.0.1:5432/',         # loopback IP
+        'ftp://example.com/x',  # non-http scheme
+        'file:///etc/passwd',  # file scheme
+        'http://localhost/admin',  # loopback hostname
+        'http://127.0.0.1:5432/',  # loopback IP
         'http://169.254.169.254/latest',  # link-local (cloud metadata)
-        'http://10.0.0.5/internal',       # private range
-        'http://[::1]/',                  # ipv6 loopback
-        'not-a-url',                      # no scheme/host
+        'http://10.0.0.5/internal',  # private range
+        'http://[::1]/',  # ipv6 loopback
+        'not-a-url',  # no scheme/host
     ],
 )
 def test_public_url_rejects_non_public(url: str) -> None:

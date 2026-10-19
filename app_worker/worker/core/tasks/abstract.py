@@ -19,9 +19,7 @@ class AbstractFfBinaryTask(AbstractTask, ABC):
         self._file_path = file_path
         self._killpg = wrap(os.killpg)
 
-    async def _run_proc(
-        self, cmd: Sequence[str]
-    ) -> asyncio.subprocess.Process | None:
+    async def _run_proc(self, cmd: Sequence[str]) -> asyncio.subprocess.Process | None:
         proc = await asyncio.create_subprocess_exec(
             *cmd,
             stdout=asyncio.subprocess.PIPE,

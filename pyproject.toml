@@ -31,6 +31,7 @@ ignore = [
     "ASYNC110",
     "BLE001",
     "COM812",
+    "CPY001",  # no file in this project carries a copyright header
     "D100",
     "D101",
     "D102",

@@ -4,7 +4,15 @@ from worker.core.tasks.abstract import AbstractFfBinaryTask
 
 
 class GetFfprobeContextTask(AbstractFfBinaryTask):
-    _CMD = ('ffprobe', '-loglevel', 'error', '-show_format', '-show_streams', '-of', 'json')
+    _CMD = (
+        'ffprobe',
+        '-loglevel',
+        'error',
+        '-show_format',
+        '-show_streams',
+        '-of',
+        'json',
+    )
 
     async def run(self) -> dict | None:
         return await self._get_context()

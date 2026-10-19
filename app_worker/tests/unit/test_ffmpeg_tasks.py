@@ -39,9 +39,7 @@ async def test_run_proc_uses_exec_not_shell(mocker, tmp_path: Path) -> None:
     exec_mock = mocker.patch(
         'asyncio.create_subprocess_exec', new=mocker.AsyncMock(return_value=proc)
     )
-    shell_mock = mocker.patch(
-        'asyncio.create_subprocess_shell', new=mocker.AsyncMock()
-    )
+    shell_mock = mocker.patch('asyncio.create_subprocess_shell', new=mocker.AsyncMock())
 
     await task._run_proc(['ffprobe', '-of', 'json', str(tmp_path / 'x')])
 
@@ -114,4 +112,6 @@ async def test_encode_isolates_filename_and_preserves_opts(
     assert cmd[0] == 'ffmpeg'
     assert str(media.video.current_filepath) in cmd
     # Per-host encode options are forwarded verbatim, in order, as separate args.
-    assert [*encode_opts] == cmd[cmd.index('-c:v') : cmd.index('-c:v') + len(encode_opts)]
+    assert [*encode_opts] == cmd[
+        cmd.index('-c:v') : cmd.index('-c:v') + len(encode_opts)
+    ]

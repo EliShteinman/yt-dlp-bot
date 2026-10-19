@@ -1,4 +1,4 @@
-import datetime
+import datetime as dt
 
 from pydantic import StrictInt, StrictStr
 
@@ -9,4 +9,4 @@ class CacheSchema(RealBaseModel):
     cache_id: StrictStr
     cache_unique_id: StrictStr
     file_size: StrictInt
-    date_timestamp: datetime.datetime
+    date_timestamp: dt.datetime

@@ -1,4 +1,4 @@
-import datetime
+import datetime as dt
 import logging
 from typing import Final
 
@@ -29,6 +29,4 @@ class YtdlpGithubClient:
         )
         async with aiohttp.ClientSession() as session, session.get(tag_url) as resp:
             version = resp.url.parts[-1]
-            return LatestVersion(
-                version=version, retrieved_at=datetime.datetime.now(datetime.UTC)
-            )
+            return LatestVersion(version=version, retrieved_at=dt.datetime.now(dt.UTC))
