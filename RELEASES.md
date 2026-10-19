@@ -1,3 +1,100 @@
+## Release 1.8.0
+
+Release date: October 19, 2026
+
+## New Features
+
+- Playlists: a playlist link downloads every video (up to `MAX_PLAYLIST_ITEMS`,
+  default 50), each one as a separate task. A video link that merely carries a
+  `list=` parameter still downloads just that video.
+- Live status: one message per video that updates itself with download
+  progress (percent, size, speed, time left), then upload progress, and is
+  removed when the video arrives. Playlists get a "N videos queued" message.
+  Users with `silent: true` get no status messages.
+- Best quality that fits: `MAX_VIDEO_FILESIZE` (default `1900M`) picks the best
+  format whose size, known before downloading, fits Telegram's 2 GB bot upload
+  limit, and fails immediately when none does. Optional `MAX_VIDEO_HEIGHT` caps
+  the resolution (off by default).
+- Failed and interrupted jobs are no longer lost: messages are acknowledged only
+  after they are handled, survive a broker restart, are retried a limited number
+  of times and then kept in a `dead.q` dead-letter queue.
+
+## Important (upgrading from 1.7.x)
+
+Back up your database first, then, in this order:
+
+1. `git pull`, then generate the passwords once (Postgres and RabbitMQ no longer
+   use the defaults from git):
+   ```bash
+   scripts/generate-secrets.sh
+   ```
+2. Rebuild everything on the new base image:
+   ```bash
+   docker compose build --pull base-image && docker compose build
+   ```
+3. Stop the apps **before** replacing RabbitMQ (old apps would recreate the old
+   queues and the new apps would fail with `PRECONDITION_FAILED`), then start
+   RabbitMQ, Redis and the PO token provider on fresh volumes:
+   ```bash
+   docker compose stop yt_bot yt_worker yt_api
+   docker compose up -d -V --no-deps --force-recreate yt_rabbitmq yt_redis yt_pot_provider
+   ```
+4. Move the database to Postgres 18 (dumps it, starts Postgres 18 on a new
+   `pgdata18` volume, restores, checks row counts, starts the apps):
+   ```bash
+   scripts/postgres-major-upgrade.sh ~/yt-pre-pg18.sql
+   ```
+   The old `pgdata` volume is left untouched for rollback; remove it once
+   everything works.
+5. The bot, worker and API now run as UID 1000. If you use `save_to_storage`,
+   make the host storage directory writable for it, e.g.
+   `sudo chown 1000:1000 /data/downloads`.
+
+Other changes you may notice:
+
+- `app_bot/config.yml` is mounted into the container at runtime instead of
+  being copied into the image; the bot refuses to start if it is missing.
+- New environment variables: `MAX_PLAYLIST_ITEMS`, `MAX_VIDEO_FILESIZE`,
+  `MAX_VIDEO_HEIGHT`, `PROGRESS_REPORT_INTERVAL_SECONDS` (worker);
+  `TG_STATUS_EDIT_INTERVAL_SECONDS`, `TG_STATUS_RETENTION_SECONDS` (bot);
+  `CONSUMER_NUMBER_OF_RETRY`, `RABBITMQ_CONSUMER_TIMEOUT_MS`,
+  `RABBITMQ_PROGRESS_TTL_MS` (common).
+- API: `custom_filename` is optional when creating a task.
+- Postgres and RabbitMQ ports are published on `127.0.0.1` only.
+
+## Security
+
+- Remote code execution through crafted URLs/filenames passed to ffmpeg fixed
+  (commands run without a shell); download URLs and custom filenames are
+  validated.
+- PO token provider upgraded to 2.0.2 (fixes an RCE in the provider server).
+- Containers run as an unprivileged user with all capabilities dropped; the API,
+  Postgres and RabbitMQ listen on localhost only; generated passwords instead of
+  `yt/yt` and `guest/guest`; the Telegram config is no longer baked into images.
+
+## Platform
+
+- Python 3.14, Alpine 3.24 (ffmpeg 8.1, Node.js 24), Postgres 18, RabbitMQ 4.3,
+  Redis 8, all Python dependencies upgraded.
+- The Telegram library moved from the archived `pyrofork` to `kurigram`.
+- The bundled `yt-dlp-ejs` solver is installed, so YouTube no longer hides
+  higher-quality formats.
+
+## Fixes
+
+- `MAX_SIMULTANEOUS_DOWNLOADS` and `max_upload_tasks` were never enforced.
+- Tasks interrupted by a worker restart stayed `PROCESSING` forever.
+- The bot deleted the history of API tasks every minute.
+- Clearer errors when a download produced no file; error messages are logged and
+  no longer leave the "processing" message behind.
+
+## Development
+
+- pre-commit hooks (Ruff, shellcheck, gitleaks) and a GitHub Actions workflow
+  running lint and the test suites of all four components.
+
+---
+
 ## Release 1.7.3
 
 Release date: July 24, 2026

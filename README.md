@@ -2,7 +2,7 @@
 
 Simple and reliable self-hosted Video Download Telegram Bot.
 
-Version: 1.7.3. [Release details](RELEASES.md).
+Version: 1.8.0. [Release details](RELEASES.md) (read the upgrade steps when coming from 1.7.x).
 
 ![frames](.assets/download_success.png)
 
@@ -16,7 +16,9 @@ Version: 1.7.3. [Release details](RELEASES.md).
 ## 😂 Features
 
 * Download audio and free videos with Creative Commons (CC) License from [yt-dlp](https://github.com/yt-dlp/yt-dlp) sites to your storage.
-* Upload downloaded media to Telegram.
+* Upload downloaded media to Telegram, picking the best quality that fits the upload limit.
+* Download whole playlists: every video is downloaded and sent separately.
+* Live status: one message per video shows download and upload progress.
 * Interact with the bot in private or group chats.
 * Trigger video downloads via link to the API.
 * Track download tasks using the API.
@@ -30,7 +32,8 @@ Version: 1.7.3. [Release details](RELEASES.md).
 1. Create Telegram bot using [BotFather](https://t.me/BotFather) and get your `token`
 2. [Get your Telegram API Keys](https://my.telegram.org/apps) (`api_id` and `api_hash`)
 3. [Find your Telegram User ID](https://stackoverflow.com/questions/32683992/find-out-my-own-user-id-for-sending-a-message-with-telegram-api)
-4. Copy `app_bot/config-example.yml` to `app_bot/config.yml`
+4. Copy `app_bot/config-example.yml` to `app_bot/config.yml` (it is mounted into the
+   bot container at runtime; restart the bot after editing it)
 5. Write `token`, `api_id`, `api_hash` to `app_bot/config.yml` by changing respective
    placeholders
 6. Write your Telegram user or group ID to the `allowed_users` -> `id` by replacing dummy
@@ -43,14 +46,16 @@ Version: 1.7.3. [Release details](RELEASES.md).
 9. Media `STORAGE_PATH` environment variable is located in
    the `envs/worker.env` file. By default, it's `/filestorage` path inside the
    container. What you want is to map the real path to this inside
-   the `docker-compose.yml` file for `worker` service, e.g. if you're on Windows, next
+   the `docker-compose.yml` file for the `yt_worker` service, e.g. if you're on Windows, next
    strings mean container path `/filestorage` is mapped to real `D:/Videos` so your
    videos will be saved to your `Videos` folder.
    ```yml
-     worker:
+     yt_worker:
        volumes:
          - "D:/Videos:/filestorage"
    ```
+   The worker runs as UID 1000, so the host directory must be writable by it
+   (e.g. `sudo chown 1000:1000 /data/downloads`).
 10. Change application's `LOG_LEVEL` in `envs/common.env` to `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL` if needed
 11. Generate the database and message broker passwords (once; an existing file is never overwritten):
     ```bash
@@ -76,10 +81,21 @@ For development, install the git hooks once (Ruff, shellcheck, secret scanning r
 uvx pre-commit install
 ```
 
+Run a component's tests the way CI does (`yt_shared`, `app_worker`, `app_bot`, `app_api`):
+
+```bash
+export UV_PROJECT_ENVIRONMENT=$PWD/.venv-test
+(cd yt_shared && uv sync --frozen --no-install-project)
+(cd app_worker && uv sync --frozen --no-install-project --inexact)
+uv pip install --python .venv-test/bin/python -e ./yt_shared pytest pytest-asyncio pytest-mock pytest-cov
+cd app_worker && ../.venv-test/bin/python -m pytest -m "not network"
+```
+
 Your Telegram Bot should send you a startup message:
 `✨ <YOUR_BOT_NAME> started, paste a video URL(s) to start download` and that's it. After
-pasting video URL(s) bot will send you appropriate message whether they were downloaded
-or something went wrong.
+pasting video URL(s) the bot keeps one status message per video up to date while it
+downloads and uploads, and removes it when the video arrives. For a playlist it first
+tells you how many videos were queued. If something goes wrong you get an error message.
 
 ## 💻 Advanced setup
 
@@ -88,8 +104,9 @@ or something went wrong.
    checking [available options](https://github.com/yt-dlp/yt-dlp/blob/master/yt_dlp/YoutubeDL.py#L180).
 2. Default max simultaneous video downloads by worker service is 2. Change
    the `MAX_SIMULTANEOUS_DOWNLOADS` variable in `envs/worker.env` to desired value but
-   keep in mind that default mounted volume size is 7168m (7GB) in `docker-compose.yml`
-   so it may be not enough if you download a lot of large videos at once.
+   keep in mind that the shared download volume is a 27168m (~27GB) tmpfs in
+   `docker-compose.yml`, so it may be not enough if you download a lot of large videos at once.
+   A playlist is split into at most `MAX_PLAYLIST_ITEMS` videos (default 50).
 3. `yt-dlp` will try to download video thumbnail if it exists. In other case Worker
    service (particularly the FFmpeg process) will make a JPEG thumbnail from the
    video. It's needed when you choose to upload the video to the Telegram chat. By
@@ -97,13 +114,20 @@ or something went wrong.
    shorter, it will make it on `video length / 2` time point because the FFmpeg process
    will error out. Change the `THUMBNAIL_FRAME_SECOND` variable if needed in
    the `envs/worker.env` file.
-4. Max upload file size for non-premium Telegram user is 2GB (2147483648 bytes) which is
-   reflected in the example config `app_bot/config-example.yml`. If the configured user
-   is the premium user, you're allowed to upload files up to 4GB (4294967296 bytes) and
-   can change the default value stored in the `upload_video_max_file_size` config
-   variable.
+4. Telegram bots can upload files up to 2GB (2147483648 bytes), which is
+   reflected in `upload_video_max_file_size` in the example config. The worker picks the
+   best format whose size fits `MAX_VIDEO_FILESIZE` in `envs/worker.env` (default `1900M`,
+   leaving room for audio and size estimates); remove it for no limit. Uncomment
+   `MAX_VIDEO_HEIGHT` there to also cap the resolution (e.g. `1080`).
 5. If the website you want to download from requires authentication you can use your cookies by putting them into
    the `app_worker/cookies/cookies.txt` file in the Netscape format.
+6. Live status updates: the worker reports download progress every
+   `PROGRESS_REPORT_INTERVAL_SECONDS` (`envs/worker.env`), and the bot edits a status
+   message at most every `TG_STATUS_EDIT_INTERVAL_SECONDS` (`envs/bot.env`) to stay within
+   Telegram's rate limits.
+7. A job that keeps failing is retried `CONSUMER_NUMBER_OF_RETRY` times and then moved to
+   the `dead.q` RabbitMQ queue. Long downloads and uploads may stay unacknowledged for up
+   to `RABBITMQ_CONSUMER_TIMEOUT_MS` (`envs/common.env`, default 6 hours).
 
 ## 🛑 Failed download
 
@@ -114,54 +138,68 @@ details
 
 ## Access
 
-- **API**: default port is `1984` and no auth. Port can be changed
-  in `docker-compose.yml`
-- **RabbitMQ**: default credentials are located in `envs/common.env`
-- **PostgreSQL**: default credentials are located in `envs/common.env`.
+- **API**: `127.0.0.1:1984` on the host, no auth, so it is not reachable from the
+  network. Port and binding can be changed in `docker-compose.yml`.
+- **RabbitMQ**: user `yt`, password in `envs/secrets.env`; AMQP on `127.0.0.1:25672`,
+  management UI on `127.0.0.1:15672`.
+- **PostgreSQL**: user `yt`, password in `envs/secrets.env`; `127.0.0.1:5435`.
+
+Use an SSH tunnel to reach them from another machine.
 
 ## API
 
 By default, API service will run on your `localhost` and `1984` port. API endpoint
-documentations lives at `http://127.0.0.1:1984/docs`.
+documentations lives at `http://127.0.0.1:1984/docs`. A playlist URL sent to the API is
+split into one task per video; the id returned for the playlist itself is not tracked.
 
 | Endpoint                                                           | Method   | Description                                                                                                                                |
 |--------------------------------------------------------------------|----------|--------------------------------------------------------------------------------------------------------------------------------------------|
 | `/status`                                                          | `GET`    | Get API healthcheck status, usually response is `{"status": "OK"}`                                                                         |
-| `/v1/yt-dlp`                                                       | `GET`    | Get latest and currently installed `yt-dlp` version                                                                                        |
-| `/v1/tasks/?include_meta=False&status=DONE`                        | `GET`    | Get all tasks with filtering options like to include large file metadata and by task status: `PENDING`, `PROCESSING`, `FAILED` and `DONE`. |
-| `/v1/tasks/f828714a-5c50-45de-87c0-3b51b7e04039?include_meta=True` | `GET`    | Get info about task by ID                                                                                                                  |
-| `/v1/tasks/latest?include_meta=True`                               | `GET`    | Get info about latest task                                                                                                                 |
-| `/v1/tasks/f828714a-5c50-45de-87c0-3b51b7e04039`                   | `DELETE` | Delete task by ID                                                                                                                          |
-| `/v1/tasks`                                                        | `POST`   | Create a download task by sending json payload `{"url": "<URL>"}`                                                                          |
-| `/v1/tasks/stats`                                                  | `GET`    | Get overall tasks stats                                                                                                                    |
+| `/api/v1/yt-dlp/?release_channel=NIGHTLY`                          | `GET`    | Get latest (`NIGHTLY`, `STABLE` or `MASTER`) and currently installed `yt-dlp` version                                                      |
+| `/api/v1/tasks/?include_meta=False&status=DONE`                    | `GET`    | Get all tasks with filtering options like to include large file metadata and by task status: `PENDING`, `PROCESSING`, `FAILED` and `DONE`. |
+| `/api/v1/tasks/f828714a-5c50-45de-87c0-3b51b7e04039?include_meta=True` | `GET`    | Get info about task by ID                                                                                                                  |
+| `/api/v1/tasks/latest?include_meta=True`                           | `GET`    | Get info about latest task                                                                                                                 |
+| `/api/v1/tasks/f828714a-5c50-45de-87c0-3b51b7e04039`               | `DELETE` | Delete task by ID                                                                                                                          |
+| `/api/v1/tasks/`                                                   | `POST`   | Create a download task (see example below; `custom_filename` is optional)                                                                 |
+| `/api/v1/tasks/stats`                                              | `GET`    | Get overall tasks stats                                                                                                                    |
 
 ### API examples
 
-1. `GET http://localhost:1984/v1/tasks/?include_meta=False&status=DONE&limit=2&offset=0`
+1. `GET http://localhost:1984/api/v1/tasks/?include_meta=False&status=DONE&limit=2&offset=0`
 
    Response
    ```json
    [
        {
            "id": "7ab91ef7-461c-4ef6-a35b-d3704fe28e6c",
-           "url": "https://www.youtube.com/watch?v=PavYAOpVpJI",
+           "added_at": "2026-10-19T19:07:43.308683",
+           "created": "2026-10-19T19:10:21.968421",
+           "updated": "2026-10-19T19:10:51.681729",
            "status": "DONE",
+           "url": "https://www.youtube.com/watch?v=PavYAOpVpJI",
            "source": "BOT",
-           "added_at": "2022-02-14T02:29:55.981622",
-           "created": "2022-02-14T02:29:57.211622",
-           "updated": "2022-02-14T02:29:59.595551",
+           "from_user_id": 123456789,
            "message_id": 621,
-           "file": {
-               "id": "4b1c63ed-3e32-43e6-a0b7-c7fc8713b268",
-               "created": "2022-02-14T02:29:59.597839",
-               "updated": "2022-02-14T02:29:59.597845",
-               "name": "[Drone Freestyle] Mountain Landscape With Snow | Free Stock Footage | Creative Common Video",
-               "ext": "mp4"
-           }
+           "yt_dlp_version": "2026.10.10.233141",
+           "error": null,
+           "files": [
+               {
+                   "id": "4b1c63ed-3e32-43e6-a0b7-c7fc8713b268",
+                   "created": "2026-10-19T19:10:51.675802",
+                   "updated": "2026-10-19T19:10:51.675810",
+                   "title": "[Drone Freestyle] Mountain Landscape With Snow | Free Stock Footage | Creative Common Video",
+                   "name": "[Drone Freestyle] Mountain Landscape With Snow | Free Stock Footage | Creative Common Video.mp4",
+                   "thumb_name": "[Drone Freestyle] Mountain Landscape With Snow | Free Stock Footage | Creative Common Video.jpg",
+                   "duration": 300,
+                   "width": 1920,
+                   "height": 1080,
+                   "cache": null
+               }
+           ]
        }
    ]
    ```
-2. `POST http://localhost:1984/v1/tasks`
+2. `POST http://localhost:1984/api/v1/tasks/`
 
    Request
    ```json
@@ -182,7 +220,7 @@ documentations lives at `http://127.0.0.1:1984/docs`.
        "added_at": "2022-02-14T00:35:25.419962+00:00"
    }
    ```
-3. `GET http://localhost:1984/v1/tasks/stats`
+3. `GET http://localhost:1984/api/v1/tasks/stats`
 
    Response
    ```json
