@@ -1,3 +1,9 @@
+x-app-hardening: &app-hardening
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+
 services:
   base-image:
     image: yt-base-image
@@ -7,6 +13,7 @@ services:
       mode: replicated
       replicas: 0
   yt_api:
+    <<: *app-hardening
     container_name: yt_api
     build:
       context: .
@@ -27,6 +34,7 @@ services:
       - yt_worker
       - yt_redis
   yt_bot:
+    <<: *app-hardening
     container_name: yt_bot
     build:
       context: .
@@ -52,6 +60,7 @@ services:
         bind:
           create_host_path: false
   yt_worker:
+    <<: *app-hardening
     container_name: yt_worker
     build:
       context: .

@@ -13,3 +13,5 @@ COPY ./yt_shared ./yt_shared
 
 RUN --mount=from=ghcr.io/astral-sh/uv,source=/uv,target=/bin/uv \
     uv pip install -e ./yt_shared
+
+USER app
