@@ -70,6 +70,12 @@ docker compose up --build -d -t 0 && docker compose logs --tail 100 -f
 docker compose stop -t 0
 ```
 
+For development, install the git hooks once (Ruff, shellcheck, secret scanning run before every commit):
+
+```bash
+uvx pre-commit install
+```
+
 Your Telegram Bot should send you a startup message:
 `✨ <YOUR_BOT_NAME> started, paste a video URL(s) to start download` and that's it. After
 pasting video URL(s) bot will send you appropriate message whether they were downloaded
