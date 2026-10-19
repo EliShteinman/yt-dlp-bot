@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import traceback
 
@@ -10,11 +11,13 @@ from yt_shared.schemas.error import ErrorDownloadGeneralPayload, ErrorDownloadPa
 from yt_shared.schemas.media import DownMedia, InbMediaPayload
 from yt_shared.schemas.success import SuccessDownloadPayload
 
+from worker.core.config import settings
 from worker.core.downloader import MediaDownloader
 from worker.core.exceptions import DownloadVideoServiceError, GeneralVideoServiceError
 from worker.core.media_service import MediaService
 from worker.core.playlist_expander import PlaylistExpander
 from worker.core.playlist_fan_out import PlaylistFanOut
+from worker.core.progress_reporter import DownloadProgressReporter
 
 
 class InboundPayloadHandler:
@@ -54,6 +57,7 @@ class InboundPayloadHandler:
                 media_payload=media_payload,
                 downloader=MediaDownloader(),
                 task_repository=TaskRepository(db=session),
+                progress_reporter=self._create_progress_reporter(media_payload),
             )
             try:
                 media, task = await media_service.process()
@@ -69,6 +73,18 @@ class InboundPayloadHandler:
                 self._log.error(err_msg)
                 raise RuntimeError(err_msg)
             await self._send_finished_task(task, media, media_payload)
+
+    def _create_progress_reporter(
+        self, media_payload: InbMediaPayload
+    ) -> DownloadProgressReporter | None:
+        if media_payload.from_chat_id is None:
+            return None
+        return DownloadProgressReporter(
+            media_payload=media_payload,
+            publisher=self._rmq_publisher,
+            loop=asyncio.get_running_loop(),
+            interval_seconds=settings.PROGRESS_REPORT_INTERVAL_SECONDS,
+        )
 
     async def _send_finished_task(
         self, task: Task, media: DownMedia, media_payload: InbMediaPayload

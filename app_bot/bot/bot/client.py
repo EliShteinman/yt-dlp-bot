@@ -6,7 +6,10 @@ from pyrogram import Client
 from pyrogram.enums import ParseMode
 from pyrogram.errors import RPCError
 
+from bot.core.config.config import settings
 from bot.core.schemas import ConfigSchema, UserSchema
+from bot.core.status.registry import StatusMessageRegistry
+from bot.core.status.updater import StatusMessageUpdater
 from bot.core.utils import bold
 
 
@@ -21,6 +24,13 @@ class VideoBotClient(Client):
         self._log.info('Initializing bot client')
         self.conf = conf
         self.upload_slots = asyncio.Semaphore(self.conf.telegram.max_upload_tasks)
+        self.status = StatusMessageUpdater(
+            bot=self,
+            registry=StatusMessageRegistry(
+                retention_seconds=settings.TG_STATUS_RETENTION_SECONDS
+            ),
+            edit_interval_seconds=settings.TG_STATUS_EDIT_INTERVAL_SECONDS,
+        )
 
         self.allowed_users: dict[int, UserSchema] = {}
         self.admin_users: dict[int, UserSchema] = {}

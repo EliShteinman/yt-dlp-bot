@@ -1,12 +1,12 @@
 import asyncio
 from abc import ABC, abstractmethod
-from collections.abc import Coroutine
+from collections.abc import Awaitable, Callable, Coroutine
 from itertools import chain
 from typing import TYPE_CHECKING
 
 from pydantic import ConfigDict, FilePath
 from pyrogram.enums import ChatAction, MessageMediaType, ParseMode
-from pyrogram.types import Animation, Message, ReplyParameters
+from pyrogram.types import Animation, Message
 from pyrogram.types import Audio as _Audio
 from pyrogram.types import Video as _Video
 from tenacity import retry, stop_after_attempt, wait_fixed
@@ -21,7 +21,7 @@ from yt_shared.utils.tasks.tasks import create_task
 
 from bot.core.config.config import get_main_config, settings
 from bot.core.schemas import AnonymousUserSchema, UserSchema, VideoCaptionSchema
-from bot.core.utils import bold, is_user_upload_silent
+from bot.core.utils import bold
 
 if TYPE_CHECKING:
     from bot.bot.client import VideoBotClient
@@ -50,13 +50,15 @@ class AudioUploadContext(BaseUploadContext):
 class AbstractUploadTask(AbstractTask, ABC):
     _UPLOAD_ACTION: ChatAction
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
+        *,
         media_object: BaseMedia,
         users: list[AnonymousUserSchema | UserSchema],
         bot: VideoBotClient,
         semaphore: asyncio.Semaphore,
         context: SuccessDownloadPayload,
+        progress: Callable[[int, int], Awaitable[None]] | None = None,
     ) -> None:
         super().__init__()
         self._config = get_main_config()
@@ -69,6 +71,7 @@ class AbstractUploadTask(AbstractTask, ABC):
         self._users = users
         self._semaphore = semaphore
         self._ctx = context
+        self._progress = progress
         self._media_ctx = self._create_media_context()
 
         self._forward_chat_ids = self._get_forward_chat_ids()
@@ -82,7 +85,7 @@ class AbstractUploadTask(AbstractTask, ABC):
 
     async def _run(self) -> None:
         try:
-            await asyncio.gather(*(self._send_upload_text(), self._upload_file()))
+            await self._upload_file()
         except Exception:
             self._log.exception('Exception in upload task for "%s"', self._filename)
             raise
@@ -94,25 +97,10 @@ class AbstractUploadTask(AbstractTask, ABC):
     def _generate_file_caption(self) -> str:
         return '\n'.join(self._generate_caption_items())[: settings.TG_MAX_CAPTION_SIZE]
 
-    async def _send_upload_text(self) -> None:
-        text = (
-            f'⬆️ {bold("Uploading")} {self._filename}\n'
-            f'📏 {bold("Size")} {self._media_object.file_size_human()}'
-        )
-        coros = []
-        for user in self._users:
-            if not is_user_upload_silent(user=user, conf=self._bot.conf):
-                kwargs = {
-                    'chat_id': user.id,
-                    'text': text,
-                    'parse_mode': ParseMode.HTML,
-                }
-                if self._ctx.message_id:
-                    kwargs['reply_parameters'] = ReplyParameters(
-                        message_id=self._ctx.message_id
-                    )
-                coros.append(self._bot.send_message(**kwargs))
-        await asyncio.gather(*coros)
+    def _progress_kwargs(self) -> dict:
+        if self._progress is None or self._media_ctx.is_cached:
+            return {}
+        return {'progress': self._progress}
 
     def _get_forward_chat_ids(self) -> list[int]:
         forward_chat_ids = []
@@ -200,6 +188,7 @@ class AudioUploadTask(AbstractUploadTask):
             'caption': self._media_ctx.caption,
             'file_name': self._media_ctx.filename,
             'duration': int(self._media_ctx.duration),
+            **self._progress_kwargs(),
         }
         return self._bot.send_audio(**kwargs)
 
@@ -282,6 +271,7 @@ class VideoUploadTask(AbstractUploadTask):
             'height': int(self._media_ctx.height),
             'width': int(self._media_ctx.width),
             'parse_mode': ParseMode.DISABLED,
+            **self._progress_kwargs(),
         }
 
         if self._media_ctx.thumb:

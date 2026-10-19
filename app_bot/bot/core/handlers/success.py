@@ -1,10 +1,10 @@
 import asyncio
 import traceback
+from collections.abc import Awaitable, Callable
 from typing import Any, ClassVar
 
 from pyrogram.enums import ParseMode
-from pyrogram.errors import RPCError
-from pyrogram.types import Message, ReplyParameters
+from pyrogram.types import ReplyParameters
 from yt_shared.emoji import SUCCESS_EMOJI
 from yt_shared.enums import MediaFileType, TaskSource
 from yt_shared.rabbit.publisher import RmqPublisher
@@ -15,6 +15,8 @@ from yt_shared.utils.file import list_files_human, remove_dir
 from yt_shared.utils.tasks.tasks import create_task
 
 from bot.core.handlers.abstract import AbstractDownloadHandler
+from bot.core.status.formatter import StatusTextFormatter
+from bot.core.status.registry import StatusKey
 from bot.core.tasks.upload import AbstractUploadTask, AudioUploadTask, VideoUploadTask
 from bot.core.utils import bold, is_user_upload_silent
 
@@ -47,32 +49,37 @@ class SuccessDownloadHandler(AbstractDownloadHandler):
         await asyncio.gather(*coro_tasks)
 
     async def _upload_with_status(self, media_object: BaseMedia) -> None:
-        status_message = await self._send_upload_status(media_object)
-        try:
-            await self._create_upload_task(media_object)
-        finally:
-            await self._delete_upload_status(status_message)
-
-    async def _send_upload_status(self, media_object: BaseMedia) -> Message | None:
-        if not self._body.from_chat_id:
-            return None
-        return await self._bot.send_message(
-            chat_id=self._body.from_chat_id,
-            text=f'⬆️ {bold(f"Uploading {media_object.file_size_human()}")}',
-            reply_parameters=ReplyParameters(message_id=self._body.message_id),
-        )
-
-    async def _delete_upload_status(self, status_message: Message | None) -> None:
-        if not status_message:
+        if not self._shows_status():
+            await self._create_upload_task(media_object, progress=None)
             return
+        key = self._status_key()
+        size = media_object.current_file_size()
+        await self._bot.status.show(
+            key, StatusTextFormatter.uploading(media_object.title, 0, size), force=True
+        )
         try:
-            await status_message.delete()
-        except RPCError as err:
-            self._log.warning(
-                'Could not delete upload status message "%s": %s',
-                status_message.id,
-                err,
+            await self._create_upload_task(
+                media_object, progress=self._upload_progress(key, media_object.title)
             )
+        finally:
+            await self._bot.status.finish(key)
+
+    def _upload_progress(
+        self, key: StatusKey, title: str | None
+    ) -> Callable[[int, int], Awaitable[None]]:
+        async def report(sent_bytes: int, total_bytes: int) -> None:
+            await self._bot.status.show(
+                key, StatusTextFormatter.uploading(title, sent_bytes, total_bytes)
+            )
+
+        return report
+
+    def _shows_status(self) -> bool:
+        if not self._body.from_chat_id or self._body.context.source is TaskSource.API:
+            return False
+        return not is_user_upload_silent(
+            user=self._receiving_users[0], conf=self._bot.conf
+        )
 
     async def _publish_error_message(self, err: Exception) -> None:
         err_payload = ErrorDownloadGeneralPayload(
@@ -92,11 +99,11 @@ class SuccessDownloadHandler(AbstractDownloadHandler):
 
     async def _handle_media_object(self, media_object: BaseMedia) -> None:
         try:
-            await self._send_success_text(media_object)
             if self._upload_is_enabled():
                 self._validate_file_size_for_upload(media_object)
                 await self._upload_with_status(media_object)
             else:
+                await self._send_success_text(media_object)
                 self._log.warning(
                     'File "%s" will not be uploaded due to upload configuration',
                     media_object.current_filepath,
@@ -115,7 +122,11 @@ class SuccessDownloadHandler(AbstractDownloadHandler):
         )
         remove_dir(root_path)
 
-    async def _create_upload_task(self, media_object: BaseMedia) -> None:
+    async def _create_upload_task(
+        self,
+        media_object: BaseMedia,
+        progress: Callable[[int, int], Awaitable[None]] | None,
+    ) -> None:
         """Upload video to Telegram chat."""
         upload_task_cls = self._UPLOAD_TASK_MAP[media_object.file_type]
         task_name = upload_task_cls.__name__
@@ -126,6 +137,7 @@ class SuccessDownloadHandler(AbstractDownloadHandler):
                 bot=self._bot,
                 semaphore=self._bot.upload_slots,
                 context=self._body,
+                progress=progress,
             ).run(),
             task_name=task_name,
             logger=self._log,

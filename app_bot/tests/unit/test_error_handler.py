@@ -82,3 +82,11 @@ async def test_missing_ack_message_does_not_break_error(
     await handler.handle()
 
     bot.send_message.assert_awaited_once()
+
+
+async def test_error_finishes_the_status_message(
+    handler: ErrorDownloadHandler, bot: object, context: object
+) -> None:
+    await handler.handle()
+
+    bot.status.finish.assert_awaited_once_with((CHAT_ID, MESSAGE_ID, context.url))

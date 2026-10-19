@@ -35,6 +35,7 @@ _ENV_DEFAULTS: dict[str, str] = {
     'RABBITMQ_HOST': 'localhost',
     'RABBITMQ_PORT': '5672',
     'RABBITMQ_CONSUMER_TIMEOUT_MS': '21600000',
+    'RABBITMQ_PROGRESS_TTL_MS': '60000',
     'LOG_LEVEL': 'INFO',
     'REDIS_HOST': 'localhost',
     'TMP_DOWNLOAD_ROOT_PATH': tempfile.gettempdir(),
@@ -42,6 +43,8 @@ _ENV_DEFAULTS: dict[str, str] = {
     'TMP_DOWNLOADED_DIR': 'downloaded',
     'TG_MAX_MSG_SIZE': '4096',
     'TG_MAX_CAPTION_SIZE': '1024',
+    'TG_STATUS_EDIT_INTERVAL_SECONDS': '5',
+    'TG_STATUS_RETENTION_SECONDS': '600',
 }
 
 for _key, _value in _ENV_DEFAULTS.items():

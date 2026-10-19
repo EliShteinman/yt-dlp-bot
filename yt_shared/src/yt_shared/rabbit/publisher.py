@@ -10,11 +10,14 @@ from yt_shared.rabbit.rabbit_config import (
     ERROR_QUEUE,
     INPUT_EXCHANGE,
     INPUT_QUEUE,
+    PROGRESS_EXCHANGE,
+    PROGRESS_QUEUE,
     SUCCESS_EXCHANGE,
     SUCCESS_QUEUE,
 )
 from yt_shared.schemas.error import ErrorDownloadGeneralPayload, ErrorDownloadPayload
 from yt_shared.schemas.media import InbMediaPayload
+from yt_shared.schemas.progress import DownloadProgressPayload
 from yt_shared.schemas.success import SuccessDownloadPayload
 from yt_shared.utils.common import Singleton
 
@@ -59,5 +62,16 @@ class RmqPublisher(metaclass=Singleton):
         exchange = self._rabbit_mq.exchanges[SUCCESS_EXCHANGE]
         confirm = await exchange.publish(
             message, routing_key=SUCCESS_QUEUE, mandatory=True
+        )
+        return self._is_sent(confirm)
+
+    async def send_progress(self, progress_payload: DownloadProgressPayload) -> bool:
+        message = aio_pika.Message(
+            body=progress_payload.model_dump_json().encode(),
+            delivery_mode=aio_pika.DeliveryMode.NOT_PERSISTENT,
+        )
+        exchange = self._rabbit_mq.exchanges[PROGRESS_EXCHANGE]
+        confirm = await exchange.publish(
+            message, routing_key=PROGRESS_QUEUE, mandatory=True
         )
         return self._is_sent(confirm)

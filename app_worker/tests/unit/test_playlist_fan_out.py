@@ -1,6 +1,11 @@
 import pytest
 from pytest_mock import MockerFixture
-from yt_shared.enums import DownMediaType, TaskSource, TelegramChatType
+from yt_shared.enums import (
+    DownMediaType,
+    ProgressStage,
+    TaskSource,
+    TelegramChatType,
+)
 from yt_shared.schemas.media import InbMediaPayload
 
 from worker.core.playlist_fan_out import PlaylistFanOut
@@ -37,7 +42,10 @@ def expander(mocker: MockerFixture) -> object:
 
 @pytest.fixture
 def publisher(mocker: MockerFixture) -> object:
-    return mocker.Mock(send_for_download=mocker.AsyncMock(return_value=True))
+    return mocker.Mock(
+        send_for_download=mocker.AsyncMock(return_value=True),
+        send_progress=mocker.AsyncMock(return_value=True),
+    )
 
 
 @pytest.fixture
@@ -119,3 +127,24 @@ async def test_unsent_entry_is_logged_as_error(
     await fan_out.try_fan_out(media_payload)
 
     assert 'Failed to queue playlist entry' in caplog.text
+
+
+async def test_playlist_size_is_announced(
+    fan_out: PlaylistFanOut, media_payload: InbMediaPayload, publisher: object
+) -> None:
+    await fan_out.try_fan_out(media_payload)
+
+    announcement = publisher.send_progress.await_args.args[0]
+    assert (announcement.stage, announcement.entry_count) == (
+        ProgressStage.PLAYLIST_QUEUED,
+        len(ENTRY_URLS),
+    )
+
+
+async def test_playlist_without_chat_is_not_announced(
+    fan_out: PlaylistFanOut, media_payload: InbMediaPayload, publisher: object
+) -> None:
+    api_payload = media_payload.model_copy(update={'from_chat_id': None})
+    await fan_out.try_fan_out(api_payload)
+
+    publisher.send_progress.assert_not_awaited()
