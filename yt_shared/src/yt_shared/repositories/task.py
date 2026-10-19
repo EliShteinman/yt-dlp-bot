@@ -103,9 +103,11 @@ class TaskRepository:
         await self._db.commit()
 
     async def purge_user_tasks(self, user_ids: Sequence[int]) -> None:
+        if not user_ids:
+            return
         await self._db.execute(
             delete(Task).where(
-                ((Task.from_user_id.in_(user_ids)) | (Task.from_user_id.is_(None)))
+                Task.from_user_id.in_(user_ids)
                 & ~(Task.status.in_([TaskStatus.PENDING, TaskStatus.PROCESSING]))
             )
         )
