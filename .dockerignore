@@ -1,7 +1,7 @@
 **/*.session*
 **/*.yaml
 **/*.yml
-!app_bot/config.yml
+**/tests
 
 .editorconfig
 .assets
