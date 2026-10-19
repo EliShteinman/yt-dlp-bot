@@ -71,7 +71,7 @@ class BotLauncher:
     async def _start_tasks(self) -> None:
         await self._rabbit_worker_manager.start_workers()
 
-        task_name = YtdlpNewVersionNotifyTask.__class__.__name__
+        task_name = YtdlpNewVersionNotifyTask.__name__
         create_task(
             YtdlpNewVersionNotifyTask(bot=self._bot).run(),
             task_name=task_name,
@@ -80,7 +80,7 @@ class BotLauncher:
             exception_message_args=(task_name,),
         )
 
-        task_name = DbCleanupTask.__class__.__name__
+        task_name = DbCleanupTask.__name__
         user_ids = tuple(
             u.id for u in self._bot.allowed_users.values() if not u.save_to_database
         )
