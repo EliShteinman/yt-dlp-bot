@@ -77,14 +77,14 @@ services:
       start_period: 10s
   yt_postgres:
     container_name: yt_postgres
-    image: "postgres:15"
+    image: "postgres:18"
     env_file:
       - envs/common.env
     ports:
       - "127.0.0.1:5435:5432"
     restart: unless-stopped
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - pgdata18:/var/lib/postgresql
   yt_rabbitmq:
     image: "rabbitmq:4.3-management-alpine"
     container_name: yt_rabbitmq
@@ -98,7 +98,7 @@ services:
     restart: unless-stopped
 
 volumes:
-  pgdata:
+  pgdata18:
   shared-tmpfs:
     driver: local
     driver_opts:
