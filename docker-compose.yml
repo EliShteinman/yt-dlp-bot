@@ -45,6 +45,12 @@ services:
       - yt_api
     volumes:
       - "shared-tmpfs:/tmp/download_tmpfs"
+      - type: bind
+        source: ./app_bot/config.yml
+        target: /app/config.yml
+        read_only: true
+        bind:
+          create_host_path: false
   yt_worker:
     container_name: yt_worker
     build:
