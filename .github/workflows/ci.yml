@@ -23,9 +23,9 @@ jobs:
       matrix:
         include:
           # coverage_floor: current total per component; may only go up.
-          - { component: yt_shared, deps_from: app_worker, cov: yt_shared, coverage_floor: 69 }
-          - { component: app_worker, deps_from: app_worker, cov: worker, coverage_floor: 57 }
-          - { component: app_bot, deps_from: app_bot, cov: bot, coverage_floor: 58 }
+          - { component: yt_shared, deps_from: app_worker, cov: yt_shared, coverage_floor: 70 }
+          - { component: app_worker, deps_from: app_worker, cov: worker, coverage_floor: 59 }
+          - { component: app_bot, deps_from: app_bot, cov: bot, coverage_floor: 66 }
           - { component: app_api, deps_from: app_api, cov: api, coverage_floor: 40 }
     env:
       UV_PROJECT_ENVIRONMENT: ${{ github.workspace }}/.venv-ci
