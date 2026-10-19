@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 
 class YtdlpNewVersionNotifyTask(AbstractTask):
-    def __init__(self, bot: 'VideoBotClient') -> None:
+    def __init__(self, bot: VideoBotClient) -> None:
         super().__init__()
         self._bot = bot
         self._startup_message_sent = False

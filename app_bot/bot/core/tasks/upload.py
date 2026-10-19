@@ -54,7 +54,7 @@ class AbstractUploadTask(AbstractTask, ABC):
         self,
         media_object: BaseMedia,
         users: list[AnonymousUserSchema | UserSchema],
-        bot: 'VideoBotClient',
+        bot: VideoBotClient,
         semaphore: asyncio.Semaphore,
         context: SuccessDownloadPayload,
     ) -> None:

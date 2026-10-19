@@ -21,7 +21,7 @@ class AbstractDownloadResultWorker(AbstractTask):
     QUEUE_TYPE: str | None = None
     SCHEMA_CLS: tuple[type[BaseModel]] = ()
 
-    def __init__(self, bot: 'VideoBotClient') -> None:
+    def __init__(self, bot: VideoBotClient) -> None:
         super().__init__()
         self._conf = get_main_config()
         self._bot = bot

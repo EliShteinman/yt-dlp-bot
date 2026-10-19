@@ -59,7 +59,7 @@ def split_telegram_message(
     chunk_size: int = settings.TG_MAX_MSG_SIZE,
     return_first: bool = False,
     negate: bool = False,
-) -> Generator[str, None, None]:
+) -> Generator[str]:
     text_len = len(text)
     if text_len > chunk_size:
         for x in range(0, text_len, chunk_size):
