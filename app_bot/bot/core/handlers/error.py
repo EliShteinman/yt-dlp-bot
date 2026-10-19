@@ -41,6 +41,7 @@ class ErrorDownloadHandler(AbstractDownloadHandler):
             self._body.exception_type,
         )
         await self._delete_acknowledgment_message()
+        await self._bot.status.finish(self._status_key())
         await self._send_error_text()
 
     async def _send_error_text(self) -> None:

@@ -43,6 +43,8 @@ _ENV_DEFAULTS: dict[str, str] = {
     'TMP_DOWNLOADED_DIR': 'downloaded',
     'TG_MAX_MSG_SIZE': '4096',
     'TG_MAX_CAPTION_SIZE': '1024',
+    'TG_STATUS_EDIT_INTERVAL_SECONDS': '5',
+    'TG_STATUS_RETENTION_SECONDS': '600',
 }
 
 for _key, _value in _ENV_DEFAULTS.items():

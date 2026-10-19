@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 import yaml
-from pydantic import ValidationError
+from pydantic import Field, ValidationError
 from yt_shared.config import CommonSettings
 
 from bot.core.exceptions import ConfigError
@@ -63,6 +63,8 @@ def get_main_config() -> ConfigSchema:
 class BotSettings(CommonSettings):
     TG_MAX_MSG_SIZE: int
     TG_MAX_CAPTION_SIZE: int
+    TG_STATUS_EDIT_INTERVAL_SECONDS: float = Field(gt=0)
+    TG_STATUS_RETENTION_SECONDS: float = Field(gt=0)
 
 
 settings = BotSettings()

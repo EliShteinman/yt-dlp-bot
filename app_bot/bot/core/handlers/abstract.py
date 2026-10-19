@@ -7,6 +7,7 @@ from yt_shared.enums import TaskSource, TelegramChatType
 from yt_shared.schemas.base_rabbit import BaseRabbitDownloadPayload
 
 from bot.core.schemas import AnonymousUserSchema, UserSchema
+from bot.core.status.registry import StatusKey
 
 if TYPE_CHECKING:
     from bot.bot import VideoBotClient
@@ -22,6 +23,13 @@ class AbstractDownloadHandler(ABC):
     @abstractmethod
     async def handle(self) -> None:
         pass
+
+    def _status_key(self) -> StatusKey:
+        return (
+            self._body.from_chat_id,
+            self._body.message_id,
+            self._body.context.url,
+        )
 
     async def _delete_acknowledgment_message(self) -> None:
         chat_id = self._body.from_chat_id
