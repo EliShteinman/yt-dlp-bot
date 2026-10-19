@@ -39,3 +39,16 @@ async def test_upload_task_is_named_after_its_class(
     await handler._create_upload_task(mocker.Mock(file_type=MediaFileType.VIDEO))
 
     assert create_task.await_args.kwargs['task_name'] == 'VideoUploadTaskStub'
+
+
+async def test_uploads_share_the_bot_upload_slots(
+    mocker: MockerFixture, handler: SuccessDownloadHandler, bot: object
+) -> None:
+    init = mocker.spy(VideoUploadTaskStub, '__init__')
+    mocker.patch('bot.core.handlers.success.create_task', mocker.AsyncMock())
+    for _ in range(2):
+        await handler._create_upload_task(mocker.Mock(file_type=MediaFileType.VIDEO))
+
+    assert {id(call.kwargs['semaphore']) for call in init.call_args_list} == {
+        id(bot.upload_slots)
+    }

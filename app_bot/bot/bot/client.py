@@ -20,6 +20,7 @@ class VideoBotClient(Client):
         self._log = logging.getLogger(self.__class__.__name__)
         self._log.info('Initializing bot client')
         self.conf = conf
+        self.upload_slots = asyncio.Semaphore(self.conf.telegram.max_upload_tasks)
 
         self.allowed_users: dict[int, UserSchema] = {}
         self.admin_users: dict[int, UserSchema] = {}
